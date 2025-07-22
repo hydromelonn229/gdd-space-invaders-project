@@ -289,12 +289,15 @@ public class Scene1 extends JPanel {
 
     private void drawBombing(Graphics g) {
 
-        // for (Enemy e : enemies) {
-        //     Enemy.Bomb b = e.getBomb();
-        //     if (!b.isDestroyed()) {
-        //         g.drawImage(b.getImage(), b.getX(), b.getY(), this);
-        //     }
-        // }
+        for (Enemy e : enemies) {
+            if (e instanceof gdd.sprite.Alien1) {
+                gdd.sprite.Alien1 alien = (gdd.sprite.Alien1) e;
+                gdd.sprite.Alien1.Bomb b = alien.getBomb();
+                if (b != null && !b.isDestroyed()) {
+                    g.drawImage(b.getImage(), b.getX(), b.getY(), this);
+                }
+            }
+        }
     }
 
     private void drawExplosions(Graphics g) {
@@ -340,6 +343,7 @@ public class Scene1 extends JPanel {
             drawAliens(g);
             drawPlayer(g);
             drawShot(g);
+            drawBombing(g);
 
         } else {
 
@@ -421,11 +425,26 @@ public class Scene1 extends JPanel {
         }
 
         // Enemies
+        List<Enemy> enemiesToRemove = new ArrayList<>();
         for (Enemy enemy : enemies) {
             if (enemy.isVisible()) {
                 enemy.act(direction);
+                
+                // Check if enemy has passed beyond the bottom of the screen (game over condition)
+                if (enemy.getY() > BOARD_HEIGHT) {
+                    inGame = false;
+                    timer.stop();
+                    message = "Invasion! Enemies escaped!";
+                    break; // Exit the loop immediately when game over
+                }
+            }
+            
+            // Remove enemies that are no longer visible or have died
+            if (!enemy.isVisible() || enemy.isDying()) {
+                enemiesToRemove.add(enemy);
             }
         }
+        enemies.removeAll(enemiesToRemove);
 
         // shot
         List<Shot> shotsToRemove = new ArrayList<>();
@@ -498,44 +517,48 @@ public class Scene1 extends JPanel {
         // }
         // bombs - collision detection
         // Bomb is with enemy, so it loops over enemies
-        /*
         for (Enemy enemy : enemies) {
 
-            int chance = randomizer.nextInt(15);
-            Enemy.Bomb bomb = enemy.getBomb();
+            if (enemy instanceof gdd.sprite.Alien1) {
+                gdd.sprite.Alien1 alien = (gdd.sprite.Alien1) enemy;
+                gdd.sprite.Alien1.Bomb bomb = alien.getBomb();
+                
+                if (bomb == null) continue;
 
-            if (chance == CHANCE && enemy.isVisible() && bomb.isDestroyed()) {
+                int chance = randomizer.nextInt(15);
 
-                bomb.setDestroyed(false);
-                bomb.setX(enemy.getX());
-                bomb.setY(enemy.getY());
-            }
+                if (chance == CHANCE && enemy.isVisible() && bomb.isDestroyed()) {
 
-            int bombX = bomb.getX();
-            int bombY = bomb.getY();
-            int playerX = player.getX();
-            int playerY = player.getY();
+                    bomb.setDestroyed(false);
+                    bomb.setX(enemy.getX() + (ALIEN_WIDTH / 2) - 3);
+                    bomb.setY(enemy.getY() + ALIEN_HEIGHT);
+                }
 
-            if (player.isVisible() && !bomb.isDestroyed()
-                    && bombX >= (playerX)
-                    && bombX <= (playerX + PLAYER_WIDTH)
-                    && bombY >= (playerY)
-                    && bombY <= (playerY + PLAYER_HEIGHT)) {
+                int bombX = bomb.getX();
+                int bombY = bomb.getY();
+                int playerX = player.getX();
+                int playerY = player.getY();
 
-                var ii = new ImageIcon(IMG_EXPLOSION);
-                player.setImage(ii.getImage());
-                player.setDying(true);
-                bomb.setDestroyed(true);
-            }
+                if (player.isVisible() && !bomb.isDestroyed()
+                        && bombX >= (playerX)
+                        && bombX <= (playerX + PLAYER_WIDTH)
+                        && bombY >= (playerY)
+                        && bombY <= (playerY + PLAYER_HEIGHT)) {
 
-            if (!bomb.isDestroyed()) {
-                bomb.setY(bomb.getY() + 1);
-                if (bomb.getY() >= GROUND - BOMB_HEIGHT) {
+                    var ii = new ImageIcon(IMG_EXPLOSION);
+                    player.setImage(ii.getImage());
+                    player.setDying(true);
                     bomb.setDestroyed(true);
+                }
+
+                if (!bomb.isDestroyed()) {
+                    bomb.act(); // Use the bomb's act method for movement
+                    if (bomb.getY() >= GROUND - BOMB_HEIGHT) {
+                        bomb.setDestroyed(true);
+                    }
                 }
             }
         }
-         */
     }
 
     private void doGameCycle() {
@@ -561,7 +584,7 @@ public class Scene1 extends JPanel {
 
         @Override
         public void keyPressed(KeyEvent e) {
-            System.out.println("Scene2.keyPressed: " + e.getKeyCode());
+            System.out.println("Scene1.keyPressed: " + e.getKeyCode());
 
             player.keyPressed(e);
 

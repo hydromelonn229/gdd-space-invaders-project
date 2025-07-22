@@ -8,6 +8,7 @@ import java.util.Scanner;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
@@ -37,6 +38,9 @@ public class AudioPlayer {
 
         // open audioInputStream to the clip
         clip.open(audioInputStream);
+
+        // Set volume to 50%
+        setVolume(0.50f);
 
         clip.loop(Clip.LOOP_CONTINUOUSLY);
     }
@@ -171,6 +175,22 @@ public class AudioPlayer {
                 new File(filePath).getAbsoluteFile());
         clip.open(audioInputStream);
         clip.loop(Clip.LOOP_CONTINUOUSLY);
+        // Reapply volume setting after resetting the stream
+        setVolume(0.25f);
+    }
+
+    // Method to set volume (0.0f to 1.0f)
+    public void setVolume(float volume) {
+        if (clip != null) {
+            try {
+                FloatControl volumeControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+                float range = volumeControl.getMaximum() - volumeControl.getMinimum();
+                float gain = (range * volume) + volumeControl.getMinimum();
+                volumeControl.setValue(gain);
+            } catch (Exception e) {
+                System.out.println("Volume control not supported for this audio format.");
+            }
+        }
     }
 
 }

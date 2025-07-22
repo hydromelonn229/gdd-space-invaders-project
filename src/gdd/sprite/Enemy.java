@@ -32,6 +32,18 @@ public class Enemy extends Sprite {
 
         this.x += direction;
     }
+
+    // Implementation of abstract act() method from Sprite
+    @Override
+    public void act() {
+        // Default behavior - enemies can override this
+        act(0); // No movement by default
+    }
+
+    // Default implementation returns null, can be overridden by subclasses
+    public Object getBomb() {
+        return null;
+    }
 /* 
     public Bomb getBomb() {
 
