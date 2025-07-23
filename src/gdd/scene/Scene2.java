@@ -28,24 +28,22 @@ import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
-public class Scene1 extends JPanel {
+public class Scene2 extends JPanel {
 
     private int frame = 0;
     private List<PowerUp> powerups;
     private List<Enemy> enemies;
     private List<Explosion> explosions;
     private List<Shot> shots;
-    private List<gdd.sprite.Alien1.Bomb> bombs; // Independent bomb tracking
+    private List<gdd.sprite.Alien1.Bomb> bombs;
     private Player player;
-    // private Shot shot;
 
-    final int BLOCKHEIGHT = 50;
-    final int BLOCKWIDTH = 50;
-
-    final int BLOCKS_TO_DRAW = BOARD_HEIGHT / BLOCKHEIGHT;
+    final int BLOCKHEIGHT = 40;  // Smaller blocks for different visual
+    final int BLOCKWIDTH = 40;
 
     private int direction = -1;
     private int deaths = 0;
+    private int requiredKills = 50; // More kills required for Scene 2
 
     private boolean inGame = true;
     private String message = "Game Over";
@@ -56,57 +54,42 @@ public class Scene1 extends JPanel {
     private Timer timer;
     private final Game game;
 
-    private int currentRow = -1;
-    // TODO load this map from a file
-    private int mapOffset = 0;
+    // Scene 2 specific background pattern - asteroid field
     private final int[][] MAP = {
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+        {1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0},
+        {0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1},
+        {1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0},
+        {0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1},
+        {1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0},
+        {0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1},
+        {1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0},
+        {0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0},
+        {0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1},
+        {1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0},
+        {0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1},
+        {1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0},
+        {0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1},
+        {1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0},
+        {0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0}
     };
 
     private HashMap<Integer, SpawnDetails> spawnMap = new HashMap<>();
     private AudioPlayer audioPlayer;
-    private int lastRowToShow;
-    private int firstRowToShow;
-    
-    // Random spawning variables
-    private int nextAlienSpawnFrame = 0;
-    private final int minSpawnInterval = 30; // Minimum frames between spawns
-    private final int maxSpawnInterval = 90; // Maximum frames between spawns
-    private final int spawnChance = 6; // 1 in 6 chance per frame when eligible
 
-    public Scene1(Game game) {
+    // More aggressive spawning for Scene 2
+    private int nextAlienSpawnFrame = 0;
+    private final int minSpawnInterval = 20; // Faster spawning
+    private final int maxSpawnInterval = 60; // More frequent
+    private final int spawnChance = 4; // Higher chance (1 in 4)
+
+    public Scene2(Game game) {
         this.game = game;
-        // initBoard();
-        // gameInit();
         loadSpawnDetails();
     }
 
     private void initAudio() {
         try {
-            String filePath = "src/audio/scene1.wav";
+            String filePath = "src/audio/scene1.wav"; // Reuse audio for now
             audioPlayer = new AudioPlayer(filePath);
             audioPlayer.play();
         } catch (Exception e) {
@@ -115,44 +98,36 @@ public class Scene1 extends JPanel {
     }
 
     private void loadSpawnDetails() {
-        // Initialize random spawning - remove hardcoded alien spawns
-        // Keep power-up spawn for demonstration
-        spawnMap.put(50, new SpawnDetails("PowerUp-SpeedUp", 100, 0));
+        // More power-ups for harder stage
+        spawnMap.put(100, new SpawnDetails("PowerUp-SpeedUp", 150, 0));
+        spawnMap.put(300, new SpawnDetails("PowerUp-SpeedUp", 250, 0));
+        spawnMap.put(500, new SpawnDetails("PowerUp-SpeedUp", 350, 0));
         
         // Set initial next spawn frame for random aliens
         nextAlienSpawnFrame = randomizer.nextInt(maxSpawnInterval - minSpawnInterval) + minSpawnInterval;
     }
 
-    private void initBoard() {
-
-    }
-    
     private void spawnRandomAlien() {
-        // Randomly decide if we spawn 1 alien or a small group (20% chance for group)
-        int alienCount = (randomizer.nextInt(5) == 0) ? randomizer.nextInt(3) + 2 : 1;
+        // Higher chance of groups in Scene 2 (40% chance for group)
+        int alienCount = (randomizer.nextInt(5) < 2) ? randomizer.nextInt(4) + 2 : 1;
         
         for (int i = 0; i < alienCount; i++) {
-            // Generate random X position within screen bounds
             int randomX = randomizer.nextInt(BOARD_WIDTH - ALIEN_WIDTH);
             
-            // If spawning multiple aliens, spread them out
             if (alienCount > 1) {
-                int spacing = Math.min(120, BOARD_WIDTH / alienCount);
-                randomX = (i * spacing) + randomizer.nextInt(Math.max(20, spacing - ALIEN_WIDTH));
+                int spacing = Math.min(100, BOARD_WIDTH / alienCount);
+                randomX = (i * spacing) + randomizer.nextInt(Math.max(15, spacing - ALIEN_WIDTH));
                 randomX = Math.max(0, Math.min(randomX, BOARD_WIDTH - ALIEN_WIDTH));
             }
             
-            // Spawn alien slightly above screen (stagger if multiple)
-            int spawnY = -ALIEN_HEIGHT - (i * 25);
+            int spawnY = -ALIEN_HEIGHT - (i * 20);
             
-            // Create and add alien
             Enemy enemy = new Alien1(randomX, spawnY);
             enemies.add(enemy);
         }
         
-        // Set next spawn time - longer interval if we spawned multiple aliens
         int baseInterval = (alienCount > 1) ? 
-            (int)(maxSpawnInterval * 1.5) : 
+            (int)(maxSpawnInterval * 1.2) : 
             randomizer.nextInt(maxSpawnInterval - minSpawnInterval) + minSpawnInterval;
         nextAlienSpawnFrame = frame + baseInterval;
     }
@@ -184,144 +159,94 @@ public class Scene1 extends JPanel {
     }
 
     private void gameInit() {
-
         enemies = new ArrayList<>();
         powerups = new ArrayList<>();
         explosions = new ArrayList<>();
         shots = new ArrayList<>();
-        bombs = new ArrayList<>(); // Initialize independent bombs list
-        
-        // Reset game state
-        deaths = 0;
-        frame = 0;
-        inGame = true;
-        message = "Game Over";
-
-        // for (int i = 0; i < 4; i++) {
-        // for (int j = 0; j < 6; j++) {
-        // var enemy = new Enemy(ALIEN_INIT_X + (ALIEN_WIDTH + ALIEN_GAP) * j,
-        // ALIEN_INIT_Y + (ALIEN_HEIGHT + ALIEN_GAP) * i);
-        // enemies.add(enemy);
-        // }s
-        // }
+        bombs = new ArrayList<>();
         player = new Player();
-        // shot = new Shot();
-        
-        // Reset spawning
-        nextAlienSpawnFrame = randomizer.nextInt(maxSpawnInterval - minSpawnInterval) + minSpawnInterval;
+        deaths = 0; // Reset death count for new scene
     }
 
     private void drawMap(Graphics g) {
-        // Draw scrolling starfield background
+        // Asteroid field background
+        int scrollOffset = (frame * 2) % BLOCKHEIGHT; // Faster scrolling
+        int baseRow = (frame * 2) / BLOCKHEIGHT;
+        int rowsNeeded = (BOARD_HEIGHT / BLOCKHEIGHT) + 2;
 
-        // Calculate smooth scrolling offset (1 pixel per frame)
-        int scrollOffset = (frame) % BLOCKHEIGHT;
-
-        // Calculate which rows to draw based on screen position
-        int baseRow = (frame) / BLOCKHEIGHT;
-        int rowsNeeded = (BOARD_HEIGHT / BLOCKHEIGHT) + 2; // +2 for smooth scrolling
-
-        // Loop through rows that should be visible on screen
         for (int screenRow = 0; screenRow < rowsNeeded; screenRow++) {
-            // Calculate which MAP row to use (with wrapping)
             int mapRow = (baseRow + screenRow) % MAP.length;
+            int y = BOARD_HEIGHT - ((screenRow * BLOCKHEIGHT) - scrollOffset);
 
-            // Calculate Y position for this row
-            // int y = (screenRow * BLOCKHEIGHT) - scrollOffset;
-            int y = BOARD_HEIGHT - ( (screenRow * BLOCKHEIGHT) - scrollOffset );
-
-            // Skip if row is completely off-screen
             if (y > BOARD_HEIGHT || y < -BLOCKHEIGHT) {
                 continue;
             }
 
-            // Draw each column in this row
             for (int col = 0; col < MAP[mapRow].length; col++) {
                 if (MAP[mapRow][col] == 1) {
-                    // Calculate X position
                     int x = col * BLOCKWIDTH;
-
-                    // Draw a cluster of stars
-                    drawStarCluster(g, x, y, BLOCKWIDTH, BLOCKHEIGHT);
+                    drawAsteroid(g, x, y, BLOCKWIDTH, BLOCKHEIGHT);
                 }
             }
         }
-
     }
 
-    private void drawStarCluster(Graphics g, int x, int y, int width, int height) {
-        // Set star color to white
-        g.setColor(Color.WHITE);
-
-        // Draw multiple stars in a cluster pattern
-        // Main star (larger)
+    private void drawAsteroid(Graphics g, int x, int y, int width, int height) {
+        // Draw asteroid-like objects
+        g.setColor(new Color(150, 150, 150)); // Gray asteroids
+        
+        // Main asteroid body
         int centerX = x + width / 2;
         int centerY = y + height / 2;
-        g.fillOval(centerX - 2, centerY - 2, 4, 4);
-
-        // Smaller surrounding stars
-        g.fillOval(centerX - 15, centerY - 10, 2, 2);
-        g.fillOval(centerX + 12, centerY - 8, 2, 2);
-        g.fillOval(centerX - 8, centerY + 12, 2, 2);
-        g.fillOval(centerX + 10, centerY + 15, 2, 2);
-
-        // Tiny stars for more detail
-        g.fillOval(centerX - 20, centerY + 5, 1, 1);
-        g.fillOval(centerX + 18, centerY - 15, 1, 1);
-        g.fillOval(centerX - 5, centerY - 18, 1, 1);
-        g.fillOval(centerX + 8, centerY + 20, 1, 1);
+        g.fillOval(centerX - 8, centerY - 6, 16, 12);
+        
+        // Smaller debris
+        g.setColor(new Color(100, 100, 100));
+        g.fillOval(centerX - 15, centerY - 8, 6, 4);
+        g.fillOval(centerX + 10, centerY - 5, 4, 6);
+        g.fillOval(centerX - 5, centerY + 8, 8, 4);
+        
+        // Tiny particles
+        g.setColor(new Color(180, 180, 180));
+        g.fillOval(centerX - 18, centerY + 2, 2, 2);
+        g.fillOval(centerX + 15, centerY - 10, 2, 2);
+        g.fillOval(centerX + 2, centerY - 15, 2, 2);
     }
 
     private void drawAliens(Graphics g) {
-
         for (Enemy enemy : enemies) {
-
             if (enemy.isVisible()) {
-
                 g.drawImage(enemy.getImage(), enemy.getX(), enemy.getY(), this);
             }
-
             if (enemy.isDying()) {
-
                 enemy.die();
             }
         }
     }
 
-    private void drawPowreUps(Graphics g) {
-
+    private void drawPowerUps(Graphics g) {
         for (PowerUp p : powerups) {
-
             if (p.isVisible()) {
-
                 g.drawImage(p.getImage(), p.getX(), p.getY(), this);
             }
-
             if (p.isDying()) {
-
                 p.die();
             }
         }
     }
 
     private void drawPlayer(Graphics g) {
-
         if (player.isVisible()) {
-
             g.drawImage(player.getImage(), player.getX(), player.getY(), this);
         }
-
         if (player.isDying()) {
-
             player.die();
             inGame = false;
         }
     }
 
     private void drawShot(Graphics g) {
-
         for (Shot shot : shots) {
-
             if (shot.isVisible()) {
                 g.drawImage(shot.getImage(), shot.getX(), shot.getY(), this);
             }
@@ -329,7 +254,6 @@ public class Scene1 extends JPanel {
     }
 
     private void drawBombing(Graphics g) {
-        // Draw all active bombs from the independent bombs list
         for (gdd.sprite.Alien1.Bomb bomb : bombs) {
             if (bomb != null && !bomb.isDestroyed()) {
                 g.drawImage(bomb.getImage(), bomb.getX(), bomb.getY(), this);
@@ -338,11 +262,8 @@ public class Scene1 extends JPanel {
     }
 
     private void drawExplosions(Graphics g) {
-
         List<Explosion> toRemove = new ArrayList<>();
-
         for (Explosion explosion : explosions) {
-
             if (explosion.isVisible()) {
                 g.drawImage(explosion.getImage(), explosion.getX(), explosion.getY(), this);
                 explosion.visibleCountDown();
@@ -351,44 +272,35 @@ public class Scene1 extends JPanel {
                 }
             }
         }
-
         explosions.removeAll(toRemove);
     }
 
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-
         doDrawing(g);
     }
 
     private void doDrawing(Graphics g) {
-
         g.setColor(Color.black);
         g.fillRect(0, 0, d.width, d.height);
 
         g.setColor(Color.white);
-        g.drawString("SCENE 1 - FRAME: " + frame, 10, 10);
-        g.drawString("KILLS: " + deaths + "/" + NUMBER_OF_ALIENS_TO_DESTROY, 10, 25);
-
-        g.setColor(Color.green);
+        g.drawString("SCENE 2 - FRAME: " + frame, 10, 10);
+        g.drawString("KILLS: " + deaths + "/" + requiredKills, 10, 25);
 
         if (inGame) {
-
-            drawMap(g);  // Draw background stars first
+            drawMap(g);
             drawExplosions(g);
-            drawPowreUps(g);
+            drawPowerUps(g);
             drawAliens(g);
             drawPlayer(g);
             drawShot(g);
             drawBombing(g);
-
         } else {
-
             if (timer.isRunning()) {
                 timer.stop();
             }
-
             gameOver(g);
         }
 
@@ -396,7 +308,6 @@ public class Scene1 extends JPanel {
     }
 
     private void gameOver(Graphics g) {
-
         g.setColor(Color.black);
         g.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
 
@@ -415,33 +326,24 @@ public class Scene1 extends JPanel {
     }
 
     private void update() {
-
-        // Random alien spawning system
+        // Random alien spawning
         if (frame >= nextAlienSpawnFrame) {
-            // Additional random chance to make spawning less predictable
             if (randomizer.nextInt(spawnChance) == 0) {
                 spawnRandomAlien();
             } else {
-                // If we don't spawn this time, set a shorter next check interval
-                nextAlienSpawnFrame = frame + randomizer.nextInt(15) + 5;
+                nextAlienSpawnFrame = frame + randomizer.nextInt(10) + 5;
             }
         }
 
-        // Check for predefined spawns (like power-ups)
+        // Predefined spawns
         SpawnDetails sd = spawnMap.get(frame);
         if (sd != null) {
-            // Create items based on spawn details
             switch (sd.type) {
                 case "Alien1":
                     Enemy enemy = new Alien1(sd.x, sd.y);
                     enemies.add(enemy);
                     break;
-                case "Alien2":
-                    // Enemy enemy2 = new Alien2(sd.x, sd.y);
-                    // enemies.add(enemy2);
-                    break;
                 case "PowerUp-SpeedUp":
-                    // Handle speed up item spawn
                     PowerUp speedUp = new SpeedUp(sd.x, sd.y);
                     powerups.add(speedUp);
                     break;
@@ -451,20 +353,20 @@ public class Scene1 extends JPanel {
             }
         }
 
-        if (deaths == NUMBER_OF_ALIENS_TO_DESTROY) {
+        // Check win condition
+        if (deaths >= requiredKills) {
             inGame = false;
             timer.stop();
-            message = "Scene 1 Complete! Loading Scene 2...";
-            // Transition to Scene 2 after a delay
+            message = "Scene 2 Complete! Loading Scene 3...";
+            // Transition to Scene 3 after a delay
             Timer transitionTimer = new Timer(3000, e -> {
                 ((Timer)e.getSource()).stop();
-                game.loadScene2();
+                game.loadScene3();
             });
             transitionTimer.setRepeats(false);
             transitionTimer.start();
         }
 
-        // player
         player.act();
 
         // Power-ups
@@ -482,33 +384,27 @@ public class Scene1 extends JPanel {
         for (Enemy enemy : enemies) {
             if (enemy.isVisible()) {
                 enemy.act(direction);
-                
-                // Check if enemy has passed beyond the bottom of the screen (game over condition)
                 if (enemy.getY() > BOARD_HEIGHT) {
                     inGame = false;
                     timer.stop();
                     message = "Invasion! Enemies escaped!";
-                    break; // Exit the loop immediately when game over
+                    break;
                 }
             }
-            
-            // Remove enemies that are no longer visible or have died
             if (!enemy.isVisible() || enemy.isDying()) {
                 enemiesToRemove.add(enemy);
             }
         }
         enemies.removeAll(enemiesToRemove);
 
-        // shot
+        // Shots
         List<Shot> shotsToRemove = new ArrayList<>();
         for (Shot shot : shots) {
-
             if (shot.isVisible()) {
                 int shotX = shot.getX();
                 int shotY = shot.getY();
 
                 for (Enemy enemy : enemies) {
-                    // Collision detection: shot and enemy
                     int enemyX = enemy.getX();
                     int enemyY = enemy.getY();
 
@@ -529,7 +425,6 @@ public class Scene1 extends JPanel {
                 }
 
                 int y = shot.getY();
-                // y -= 4;
                 y -= 20;
 
                 if (y < 0) {
@@ -542,34 +437,7 @@ public class Scene1 extends JPanel {
         }
         shots.removeAll(shotsToRemove);
 
-        // enemies
-        // for (Enemy enemy : enemies) {
-        //     int x = enemy.getX();
-        //     if (x >= BOARD_WIDTH - BORDER_RIGHT && direction != -1) {
-        //         direction = -1;
-        //         for (Enemy e2 : enemies) {
-        //             e2.setY(e2.getY() + GO_DOWN);
-        //         }
-        //     }
-        //     if (x <= BORDER_LEFT && direction != 1) {
-        //         direction = 1;
-        //         for (Enemy e : enemies) {
-        //             e.setY(e.getY() + GO_DOWN);
-        //         }
-        //     }
-        // }
-        // for (Enemy enemy : enemies) {
-        //     if (enemy.isVisible()) {
-        //         int y = enemy.getY();
-        //         if (y > GROUND - ALIEN_HEIGHT) {
-        //             inGame = false;
-        //             message = "Invasion!";
-        //         }
-        //         enemy.act(direction);
-        //     }
-        // }
-        // bombs - collision detection and management
-        // First, check if any aliens should fire new bombs
+        // Bombs
         for (Enemy enemy : enemies) {
             if (enemy instanceof gdd.sprite.Alien1) {
                 gdd.sprite.Alien1 alien = (gdd.sprite.Alien1) enemy;
@@ -577,21 +445,17 @@ public class Scene1 extends JPanel {
                 
                 if (bomb == null) continue;
 
-                int chance = randomizer.nextInt(15);
+                int chance = randomizer.nextInt(12); // More frequent bombing
 
-                // If alien should fire and its bomb is available
                 if (chance == CHANCE && enemy.isVisible() && bomb.isDestroyed()) {
                     bomb.setDestroyed(false);
                     bomb.setX(enemy.getX() + (ALIEN_WIDTH / 2) - 3);
                     bomb.setY(enemy.getY() + ALIEN_HEIGHT);
-                    
-                    // Add this bomb to the independent bombs list
                     bombs.add(bomb);
                 }
             }
         }
         
-        // Now handle all active bombs independently
         List<gdd.sprite.Alien1.Bomb> bombsToRemove = new ArrayList<>();
         for (gdd.sprite.Alien1.Bomb bomb : bombs) {
             if (bomb == null || bomb.isDestroyed()) {
@@ -599,7 +463,6 @@ public class Scene1 extends JPanel {
                 continue;
             }
             
-            // Check collision with player
             int bombX = bomb.getX();
             int bombY = bomb.getY();
             int playerX = player.getX();
@@ -618,17 +481,14 @@ public class Scene1 extends JPanel {
                 bombsToRemove.add(bomb);
             }
             
-            // Move the bomb
             if (!bomb.isDestroyed()) {
-                bomb.act(); // Use the bomb's act method for movement
+                bomb.act();
                 if (bomb.getY() >= GROUND - BOMB_HEIGHT) {
                     bomb.setDestroyed(true);
                     bombsToRemove.add(bomb);
                 }
             }
         }
-        
-        // Remove destroyed bombs from the list
         bombs.removeAll(bombsToRemove);
     }
 
@@ -639,7 +499,6 @@ public class Scene1 extends JPanel {
     }
 
     private class GameCycle implements ActionListener {
-
         @Override
         public void actionPerformed(ActionEvent e) {
             doGameCycle();
@@ -647,7 +506,6 @@ public class Scene1 extends JPanel {
     }
 
     private class TAdapter extends KeyAdapter {
-
         @Override
         public void keyReleased(KeyEvent e) {
             player.keyReleased(e);
@@ -655,24 +513,18 @@ public class Scene1 extends JPanel {
 
         @Override
         public void keyPressed(KeyEvent e) {
-            System.out.println("Scene1.keyPressed: " + e.getKeyCode());
-
             player.keyPressed(e);
 
             int x = player.getX();
             int y = player.getY();
-
             int key = e.getKeyCode();
 
             if (key == KeyEvent.VK_SPACE && inGame) {
-                System.out.println("Shots: " + shots.size());
                 if (shots.size() < 4) {
-                    // Create a new shot and add it to the list
                     Shot shot = new Shot(x, y);
                     shots.add(shot);
                 }
             }
-
         }
     }
 }

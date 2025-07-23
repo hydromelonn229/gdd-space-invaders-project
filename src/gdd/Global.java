@@ -22,7 +22,7 @@ public class Global {
     public static final int ALIEN_GAP = 30; // Gap between aliens
 
     public static final int GO_DOWN = 30; // Doubled from 15
-    public static final int NUMBER_OF_ALIENS_TO_DESTROY = 24;
+    public static final int NUMBER_OF_ALIENS_TO_DESTROY = 15; // Increased for longer gameplay
     public static final int CHANCE = 5;
     public static final int DELAY = 17;
     public static final int PLAYER_WIDTH = 30; // Doubled from 15
@@ -35,4 +35,14 @@ public class Global {
     public static final String IMG_EXPLOSION = "src/images/explosion.png";
     public static final String IMG_TITLE = "src/images/title.png";
     public static final String IMG_POWERUP_SPEEDUP = "src/images/powerup-s.png";
+    public static final String IMG_SPRITE_SHEET = "src/images/spites.png";
+    
+    // Sprite sheet dimensions (based on the provided sprite sheet)
+    public static final int SPRITE_WIDTH = 16;
+    public static final int SPRITE_HEIGHT = 16;
+    
+    // Red player ship positions in sprite sheet (row 2, columns 0-7 for animation frames)
+    public static final int RED_PLAYER_ROW = 3; // Second row (0-indexed)
+    public static final int RED_PLAYER_START_COL = 5;
+    public static final int RED_PLAYER_FRAME_COUNT = 3 ;
 }
