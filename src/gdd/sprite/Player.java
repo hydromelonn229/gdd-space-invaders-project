@@ -9,7 +9,6 @@ public class Player extends Sprite {
 
     private static final int START_X = 270;
     private static final int START_Y = 540;
-    private int width;
     private int currentSpeed = 2;
 
     private Rectangle bounds = new Rectangle(175,135,17,32);
@@ -48,10 +47,8 @@ public class Player extends Sprite {
 
         if (x <= 2) {
             x = 2;
-        }
-
-        if (x >= BOARD_WIDTH - 2 * width) {
-            x = BOARD_WIDTH - 2 * width;
+        } else if (x >= BOARD_WIDTH - (PLAYER_WIDTH * SCALE_FACTOR) + 30) {
+            x = BOARD_WIDTH - (PLAYER_WIDTH * SCALE_FACTOR) + 30;
         }
     }
 

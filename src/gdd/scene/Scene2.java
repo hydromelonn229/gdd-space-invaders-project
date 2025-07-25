@@ -43,7 +43,7 @@ public class Scene2 extends JPanel {
 
     private int direction = -1;
     private int deaths = 0;
-    private int requiredKills = 50; // More kills required for Scene 2
+    private int requiredKills = 200; // 5-minute target (Scene 2)
 
     private boolean inGame = true;
     private String message = "Game Over";
@@ -78,9 +78,9 @@ public class Scene2 extends JPanel {
 
     // More aggressive spawning for Scene 2
     private int nextAlienSpawnFrame = 0;
-    private final int minSpawnInterval = 20; // Faster spawning
-    private final int maxSpawnInterval = 60; // More frequent
-    private final int spawnChance = 4; // Higher chance (1 in 4)
+    private final int minSpawnInterval = 20; // 0.33 seconds - faster spawning for Scene 2
+    private final int maxSpawnInterval = 75; // 1.25 seconds - more frequent than Scene 1
+    private final int spawnChance = 5; // Balanced chance (1 in 5) for 5-minute gameplay
 
     public Scene2(Game game) {
         this.game = game;
