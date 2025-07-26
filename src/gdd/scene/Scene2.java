@@ -11,6 +11,7 @@ import gdd.powerup.MultiBullet;
 import gdd.sprite.Alien1;
 import gdd.sprite.Alien2;
 import gdd.sprite.Bomb;
+import gdd.sprite.Boss;
 import gdd.sprite.Enemy;
 import gdd.sprite.Explosion;
 import gdd.sprite.Player;
@@ -41,13 +42,16 @@ public class Scene2 extends JPanel {
     private List<Shot> shots;
     private List<Bomb> bombs;
     private Player player;
+    private Boss boss; // Boss enemy for final fight
+    private boolean bossSpawned = false;
+    private boolean bossPhase = false;
 
     final int BLOCKHEIGHT = 40;  // Smaller blocks for different visual
     final int BLOCKWIDTH = 40;
 
     private int direction = -1;
     private int deaths = 0;
-    private int requiredKills = 20; // 5-minute target (Scene 2)
+    private int requiredKills = 5; // Regular enemies before boss spawn
 
     private boolean inGame = true;
     private String message = "Game Over";
@@ -280,6 +284,40 @@ public class Scene2 extends JPanel {
         }
     }
 
+    private void drawBoss(Graphics g) {
+        if (boss != null && boss.isVisible()) {
+            g.drawImage(boss.getImage(), boss.getX(), boss.getY(), this);
+            
+            // Draw boss health bar
+            int healthBarWidth = 200;
+            int healthBarHeight = 20;
+            int healthBarX = (BOARD_WIDTH - healthBarWidth) / 2;
+            int healthBarY = 90; // Below dashboard
+            
+            // Background
+            g.setColor(Color.RED);
+            g.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+            
+            // Health
+            g.setColor(Color.GREEN);
+            int currentHealthWidth = (healthBarWidth * boss.getHealth()) / 20; // 20 is max health
+            g.fillRect(healthBarX, healthBarY, currentHealthWidth, healthBarHeight);
+            
+            // Border
+            g.setColor(Color.WHITE);
+            g.drawRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+            
+            // Boss name
+            g.setColor(Color.YELLOW);
+            g.setFont(g.getFont().deriveFont(14f));
+            g.drawString("BOSS", healthBarX + healthBarWidth/2 - 20, healthBarY - 5);
+        }
+        
+        if (boss != null && boss.isDying()) {
+            boss.die();
+        }
+    }
+
     private void drawPowerUps(Graphics g) {
         for (PowerUp p : powerups) {
             if (p.isVisible()) {
@@ -349,6 +387,7 @@ public class Scene2 extends JPanel {
             drawExplosions(g);
             drawPowerUps(g);
             drawAliens(g);
+            drawBoss(g);
             drawPlayer(g);
             drawShot(g);
             drawBombing(g);
@@ -389,23 +428,31 @@ public class Scene2 extends JPanel {
         g.setFont(g.getFont().deriveFont(12f));
         
         // Line 1: Scene info and Timer
-        g.drawString("SCENE 2 - FINAL", 10, 15);
+        if (bossPhase) {
+            g.drawString("SCENE 2 - BOSS FIGHT", 10, 15);
+        } else {
+            g.drawString("SCENE 2 - FINAL", 10, 15);
+        }
         g.drawString("TIME: " + timeStr, 140, 15);
         g.drawString("FRAME: " + frame, 240, 15);
         
         // Line 2: Score
         g.setColor(Color.YELLOW);
-        g.drawString("SCORE: " + deaths + "/" + requiredKills, 10, 35);
+        if (bossPhase && boss != null) {
+            g.drawString("BOSS HP: " + boss.getHealth() + "/20", 10, 35);
+        } else {
+            g.drawString("SCORE: " + deaths + "/" + requiredKills, 10, 35);
+        }
         
         // Line 3: Player Status
         g.setColor(Color.CYAN);
         g.drawString("SPEED: " + player.getSpeed() + " (+" + (player.getSpeedUpgrades() * 2) + ")", 10, 55);
-        g.drawString("Speed Upgrades: " + player.getSpeedUpgrades() + "/4", 150, 55);
+        g.drawString("Speed Upgrades: " + player.getSpeedUpgrades() + "/4", 250, 55);
         
         // Line 4: Shot Status
         g.setColor(Color.ORANGE);
         g.drawString("MAX SHOTS: " + player.getMaxShots(), 10, 70);
-        g.drawString("Shot Upgrades: " + player.getShotUpgrades() + "/4", 120, 70);
+        g.drawString("Shot Upgrades: " + player.getShotUpgrades() + "/4", 250, 70);
     }
 
     private void gameOver(Graphics g) {
@@ -427,8 +474,8 @@ public class Scene2 extends JPanel {
     }
 
     private void update() {
-        // Random alien spawning
-        if (frame >= nextAlienSpawnFrame) {
+        // Random alien spawning (only if boss hasn't spawned)
+        if (!bossSpawned && frame >= nextAlienSpawnFrame) {
             if (randomizer.nextInt(spawnChance) == 0) {
                 spawnRandomAlien();
             } else {
@@ -447,8 +494,17 @@ public class Scene2 extends JPanel {
             }
         }
 
-        // Check win condition
-        if (deaths >= requiredKills) {
+        // Boss spawning logic
+        if (deaths >= requiredKills && !bossSpawned) {
+            // Spawn boss
+            boss = new Boss(BOARD_WIDTH / 2 - 40, 120); // Center horizontally, below dashboard
+            bossSpawned = true;
+            bossPhase = true;
+            message = "BOSS FIGHT!";
+        }
+
+        // Check win condition - boss must be defeated
+        if (bossSpawned && boss != null && boss.isDead()) {
             inGame = false;
             timer.stop();
             message = "VICTORY! All scenes completed!";
@@ -515,6 +571,27 @@ public class Scene2 extends JPanel {
         }
         enemies.removeAll(enemiesToRemove);
 
+        // Boss handling
+        if (boss != null && boss.isVisible()) {
+            boss.act(0); // Move boss in zig-zag pattern
+            
+            // Boss shooting - 5 bullets straight down every 5 seconds
+            if (boss.canShoot()) {
+                // Create 5 bombs in a spread pattern straight down
+                int bossX = boss.getX() + boss.getBossWidth() / 2;
+                int bossY = boss.getY() + boss.getBossHeight();
+                
+                // Create 5 bullets with spread
+                for (int i = 0; i < 5; i++) {
+                    int offsetX = (i - 2) * 15; // Spread bullets: -30, -15, 0, 15, 30 pixels from center
+                    Bomb bossBomb = new Bomb(bossX + offsetX, bossY);
+                    bossBomb.setDestroyed(false);
+                    bombs.add(bossBomb);
+                }
+                boss.resetShootCooldown();
+            }
+        }
+
         // Shots
         List<Shot> shotsToRemove = new ArrayList<>();
         for (Shot shot : shots) {
@@ -537,6 +614,31 @@ public class Scene2 extends JPanel {
                         enemy.setDying(true);
                         explosions.add(new Explosion(enemyX, enemyY));
                         deaths++;
+                        shot.die();
+                        shotsToRemove.add(shot);
+                        
+                        // Play explosion sound
+                        try {
+                            if (explosionSound != null && explosionSound.isReady()) {
+                                explosionSound.play();
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error playing explosion sound: " + e.getMessage());
+                        }
+                    }
+                }
+
+                // Check collision with boss
+                if (boss != null && boss.isVisible() && shot.isVisible()) {
+                    int bossX = boss.getX();
+                    int bossY = boss.getY();
+                    
+                    if (shotX >= bossX && shotX <= (bossX + boss.getBossWidth())
+                            && shotY >= bossY && shotY <= (bossY + boss.getBossHeight())) {
+                        
+                        // Boss takes damage
+                        boss.takeDamage();
+                        explosions.add(new Explosion(shotX, shotY));
                         shot.die();
                         shotsToRemove.add(shot);
                         

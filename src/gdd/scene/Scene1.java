@@ -481,12 +481,12 @@ public class Scene1 extends JPanel {
         // Line 3: Player Status
         g.setColor(Color.CYAN);
         g.drawString("SPEED: " + player.getSpeed() + " (+" + (player.getSpeedUpgrades() * 2) + ")", 10, 55);
-        g.drawString("Speed Upgrades: " + player.getSpeedUpgrades() + "/4", 150, 55);
+        g.drawString("Speed Upgrades: " + player.getSpeedUpgrades() + "/4", 250, 55);
         
         // Line 4: Shot Status
         g.setColor(Color.ORANGE);
         g.drawString("MAX SHOTS: " + player.getMaxShots(), 10, 70);
-        g.drawString("Shot Upgrades: " + player.getShotUpgrades() + "/4", 120, 70);
+        g.drawString("Shot Upgrades: " + player.getShotUpgrades() + "/4", 250, 70);
     }
 
     private void gameOver(Graphics g) {
