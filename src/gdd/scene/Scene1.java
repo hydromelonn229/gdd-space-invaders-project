@@ -91,10 +91,10 @@ public class Scene1 extends JPanel {
     private int lastRowToShow;
     private int firstRowToShow;
     
-    // Random spawning variables
+    // Random spawning variables - adjusted for 5-minute gameplay
     private int nextAlienSpawnFrame = 0;
-    private final int minSpawnInterval = 30; // Minimum frames between spawns
-    private final int maxSpawnInterval = 90; // Maximum frames between spawns
+    private final int minSpawnInterval = 30; // 0.5 seconds minimum
+    private final int maxSpawnInterval = 90; // 1.5 seconds maximum  
     private final int spawnChance = 6; // 1 in 6 chance per frame when eligible
 
     public Scene1(Game game) {
