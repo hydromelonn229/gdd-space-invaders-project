@@ -2,12 +2,15 @@ package gdd.scene;
 
 import gdd.AudioPlayer;
 import gdd.Game;
+import gdd.SoundEffect;
 import static gdd.Global.*;
 import gdd.SpawnDetails;
 import gdd.powerup.PowerUp;
 import gdd.powerup.SpeedUp;
 import gdd.powerup.MultiBullet;
 import gdd.sprite.Alien1;
+import gdd.sprite.Alien2;
+import gdd.sprite.Bomb;
 import gdd.sprite.Enemy;
 import gdd.sprite.Explosion;
 import gdd.sprite.Player;
@@ -36,7 +39,7 @@ public class Scene2 extends JPanel {
     private List<Enemy> enemies;
     private List<Explosion> explosions;
     private List<Shot> shots;
-    private List<gdd.sprite.Alien1.Bomb> bombs;
+    private List<Bomb> bombs;
     private Player player;
 
     final int BLOCKHEIGHT = 40;  // Smaller blocks for different visual
@@ -76,8 +79,8 @@ public class Scene2 extends JPanel {
 
     private HashMap<Integer, SpawnDetails> spawnMap = new HashMap<>();
     private AudioPlayer audioPlayer;
-    private AudioPlayer explosionSound;
-    private AudioPlayer laserSound;
+    private SoundEffect explosionSound;
+    private SoundEffect laserSound;
 
     // More aggressive spawning for Scene 2 (but toned down)
     private int nextAlienSpawnFrame = 0;
@@ -105,12 +108,9 @@ public class Scene2 extends JPanel {
             audioPlayer = new AudioPlayer(filePath);
             audioPlayer.play();
             
-            // Initialize sound effects and STOP them completely
-            explosionSound = new AudioPlayer("src/audio/explosion.wav");
-            explosionSound.stop(); // Use stop() instead of pause()
-            
-            laserSound = new AudioPlayer("src/audio/laser.wav");
-            laserSound.stop(); // Use stop() instead of pause()
+            // Initialize sound effects using the new lightweight SoundEffect system
+            explosionSound = new SoundEffect("src/audio/explosion.wav");
+            laserSound = new SoundEffect("src/audio/laser.wav");
         } catch (Exception e) {
             System.err.println("Error initializing audio player: " + e.getMessage());
         }
@@ -141,7 +141,13 @@ public class Scene2 extends JPanel {
             
             int spawnY = -ALIEN_HEIGHT - (i * 20);
             
-            Enemy enemy = new Alien1(randomX, spawnY);
+            // In Scene 2 (final scene), higher chance for Alien2 - 40% chance for kamikaze aliens
+            Enemy enemy;
+            if (randomizer.nextInt(10) < 4) {
+                enemy = new Alien2(randomX, spawnY); // 40% chance - kamikaze alien
+            } else {
+                enemy = new Alien1(randomX, spawnY); // 60% chance - shooting alien
+            }
             enemies.add(enemy);
         }
         
@@ -195,10 +201,10 @@ public class Scene2 extends JPanel {
                 audioPlayer.stop();
             }
             if (explosionSound != null) {
-                explosionSound.stop();
+                explosionSound.dispose();
             }
             if (laserSound != null) {
-                laserSound.stop();
+                laserSound.dispose();
             }
         } catch (Exception e) {
             System.err.println("Error closing audio player.");
@@ -304,7 +310,7 @@ public class Scene2 extends JPanel {
     }
 
     private void drawBombing(Graphics g) {
-        for (gdd.sprite.Alien1.Bomb bomb : bombs) {
+        for (Bomb bomb : bombs) {
             if (bomb != null && !bomb.isDestroyed()) {
                 g.drawImage(bomb.getImage(), bomb.getX(), bomb.getY(), this);
             }
@@ -335,26 +341,10 @@ public class Scene2 extends JPanel {
         g.setColor(Color.black);
         g.fillRect(0, 0, d.width, d.height);
 
-        g.setColor(Color.white);
-        g.drawString("SCENE 2 - FRAME: " + frame, 10, 10);
-        g.drawString("KILLS: " + deaths + "/" + requiredKills, 10, 25);
-        
-        // Show multi-bullet status
-        if (player.isMultiBulletActive()) {
-            g.setColor(Color.YELLOW);
-            int secondsLeft = (player.getMultiBulletFramesLeft() / 60) + 1;
-            g.drawString("MULTI-BULLET: " + secondsLeft + "s", 10, 40);
-        }
-        
-        // Show speed boost status
-        if (player.isSpeedBoostActive()) {
-            g.setColor(Color.CYAN);
-            int secondsLeft = (player.getSpeedBoostFramesLeft() / 60) + 1;
-            int yPos = player.isMultiBulletActive() ? 55 : 40; // Adjust position if multi-bullet is also active
-            g.drawString("SPEED BOOST: " + secondsLeft + "s", 10, yPos);
-        }
-
         if (inGame) {
+            // Translate all game elements down to make room for dashboard
+            g.translate(0, 80);
+            
             drawMap(g);
             drawExplosions(g);
             drawPowerUps(g);
@@ -362,14 +352,60 @@ public class Scene2 extends JPanel {
             drawPlayer(g);
             drawShot(g);
             drawBombing(g);
+            
+            // Reset translation
+            g.translate(0, -80);
         } else {
+            // Translate game over screen down as well
+            g.translate(0, 80);
             if (timer.isRunning()) {
                 timer.stop();
             }
             gameOver(g);
+            g.translate(0, -80);
         }
 
+        // Draw Dashboard last (on top, at original position)
+        drawDashboard(g);
+
         Toolkit.getDefaultToolkit().sync();
+    }
+
+    private void drawDashboard(Graphics g) {
+        // Dashboard positioned at top of screen
+        g.setColor(Color.BLACK); // Solid black background
+        g.fillRect(0, 0, BOARD_WIDTH, 80);
+        g.setColor(Color.WHITE);
+        g.drawRect(0, 0, BOARD_WIDTH - 1, 80 - 1);
+        
+        // Calculate time elapsed (assuming 60 FPS)
+        int seconds = frame / 60;
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+        String timeStr = String.format("%02d:%02d", minutes, seconds);
+        
+        // Dashboard content
+        g.setColor(Color.WHITE);
+        g.setFont(g.getFont().deriveFont(12f));
+        
+        // Line 1: Scene info and Timer
+        g.drawString("SCENE 2 - FINAL", 10, 15);
+        g.drawString("TIME: " + timeStr, 140, 15);
+        g.drawString("FRAME: " + frame, 240, 15);
+        
+        // Line 2: Score
+        g.setColor(Color.YELLOW);
+        g.drawString("SCORE: " + deaths + "/" + requiredKills, 10, 35);
+        
+        // Line 3: Player Status
+        g.setColor(Color.CYAN);
+        g.drawString("SPEED: " + player.getSpeed() + " (+" + (player.getSpeedUpgrades() * 2) + ")", 10, 55);
+        g.drawString("Speed Upgrades: " + player.getSpeedUpgrades() + "/4", 150, 55);
+        
+        // Line 4: Shot Status
+        g.setColor(Color.ORANGE);
+        g.drawString("MAX SHOTS: " + player.getMaxShots(), 10, 70);
+        g.drawString("Shot Upgrades: " + player.getShotUpgrades() + "/4", 120, 70);
     }
 
     private void gameOver(Graphics g) {
@@ -415,11 +451,11 @@ public class Scene2 extends JPanel {
         if (deaths >= requiredKills) {
             inGame = false;
             timer.stop();
-            message = "Scene 2 Complete! Loading Scene 3...";
-            // Transition to Scene 3 after a delay
-            Timer transitionTimer = new Timer(3000, e -> {
+            message = "VICTORY! All scenes completed!";
+            // Return to title screen after a delay
+            Timer transitionTimer = new Timer(5000, e -> {
                 ((Timer)e.getSource()).stop();
-                game.loadScene3();
+                game.loadTitle();
             });
             transitionTimer.setRepeats(false);
             transitionTimer.start();
@@ -442,6 +478,32 @@ public class Scene2 extends JPanel {
         for (Enemy enemy : enemies) {
             if (enemy.isVisible()) {
                 enemy.act(direction);
+                
+                // Check for Alien2 collision with player (kamikaze attack)
+                if (enemy instanceof Alien2) {
+                    Alien2 alien2 = (Alien2) enemy;
+                    if (alien2.collidesWithPlayer(player)) {
+                        // Player dies on collision with Alien2
+                        var ii = new ImageIcon(IMG_EXPLOSION);
+                        player.setImage(ii.getImage());
+                        player.setDying(true);
+                        
+                        // Alien2 also explodes
+                        alien2.setImage(ii.getImage());
+                        alien2.setDying(true);
+                        explosions.add(new Explosion(alien2.getX(), alien2.getY()));
+                        
+                        // Play explosion sound
+                        try {
+                            if (explosionSound != null && explosionSound.isReady()) {
+                                explosionSound.play();
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error playing explosion sound: " + e.getMessage());
+                        }
+                    }
+                }
+                
                 // Remove enemies that have passed beyond the bottom of the screen
                 if (enemy.getY() > BOARD_HEIGHT) {
                     enemy.die(); // Mark enemy for removal
@@ -480,8 +542,8 @@ public class Scene2 extends JPanel {
                         
                         // Play explosion sound
                         try {
-                            if (explosionSound != null) {
-                                explosionSound.playSoundEffect();
+                            if (explosionSound != null && explosionSound.isReady()) {
+                                explosionSound.play();
                             }
                         } catch (Exception e) {
                             System.err.println("Error playing explosion sound: " + e.getMessage());
@@ -504,25 +566,26 @@ public class Scene2 extends JPanel {
 
         // Bombs
         for (Enemy enemy : enemies) {
-            if (enemy instanceof gdd.sprite.Alien1) {
-                gdd.sprite.Alien1 alien = (gdd.sprite.Alien1) enemy;
-                gdd.sprite.Alien1.Bomb bomb = alien.getBomb();
-                
-                if (bomb == null) continue;
+            if (enemy instanceof Alien1) {
+                Alien1 alien1 = (Alien1) enemy;
+                int chance = randomizer.nextInt(12); // More frequent bombing chance
 
-                int chance = randomizer.nextInt(12); // More frequent bombing
-
-                if (chance == CHANCE && enemy.isVisible() && bomb.isDestroyed()) {
-                    bomb.setDestroyed(false);
-                    bomb.setX(enemy.getX() + (ALIEN_WIDTH / 2) - 3);
-                    bomb.setY(enemy.getY() + ALIEN_HEIGHT);
-                    bombs.add(bomb);
+                if (chance == CHANCE && enemy.isVisible() && alien1.canShoot()) {
+                    // Create new bomb at alien position
+                    int bombX = enemy.getX() + (ALIEN_WIDTH / 2) - 3;
+                    int bombY = enemy.getY() + ALIEN_HEIGHT;
+                    Bomb newBomb = new Bomb(bombX, bombY);
+                    newBomb.setDestroyed(false);
+                    bombs.add(newBomb);
+                    
+                    // Reset alien's shooting cooldown
+                    alien1.resetShootCooldown();
                 }
             }
         }
         
-        List<gdd.sprite.Alien1.Bomb> bombsToRemove = new ArrayList<>();
-        for (gdd.sprite.Alien1.Bomb bomb : bombs) {
+        List<Bomb> bombsToRemove = new ArrayList<>();
+        for (Bomb bomb : bombs) {
             if (bomb == null || bomb.isDestroyed()) {
                 bombsToRemove.add(bomb);
                 continue;
@@ -587,28 +650,16 @@ public class Scene2 extends JPanel {
             if (key == KeyEvent.VK_SPACE && inGame) {
                 // Play laser sound
                 try {
-                    if (laserSound != null) {
-                        laserSound.playSoundEffect();
+                    if (laserSound != null && laserSound.isReady()) {
+                        laserSound.play();
                     }
                 } catch (Exception ex) {
                     System.err.println("Error playing laser sound: " + ex.getMessage());
                 }
                 
-                if (player.isMultiBulletActive()) {
-                    // Multi-bullet mode: shoot 5 bullets in spread pattern
-                    if (shots.size() <= 10) { // Allow more shots when in multi-bullet mode
-                        int[] offsets = {-20, -10, 0, 10, 20}; // Spread pattern
-                        for (int offset : offsets) {
-                            Shot shot = new Shot(x + offset, y);
-                            shots.add(shot);
-                        }
-                    }
-                } else {
-                    // Normal mode: shoot single bullet
-                    if (shots.size() < 4) {
-                        Shot shot = new Shot(x, y);
-                        shots.add(shot);
-                    }
+                if (shots.size() < player.getMaxShots()) {
+                    Shot shot = new Shot(x, y);
+                    shots.add(shot);
                 }
             }
         }

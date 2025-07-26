@@ -4,12 +4,6 @@ import static gdd.Global.*;
 import gdd.sprite.Player;
 import javax.swing.ImageIcon;
 
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-
-
 public class SpeedUp extends PowerUp {
 
     public SpeedUp(int x, int y) {
@@ -28,9 +22,9 @@ public class SpeedUp extends PowerUp {
     }
 
     public void upgrade(Player player) {
-        // Upgrade the player with temporary speed boost for 10 seconds (600 frames at 60fps)
+        // Permanently increase the player's speed by +2 (up to 4 upgrades)
         if (isVisible()) {
-            player.enableSpeedBoost(600, 4); // 10 seconds, +4 speed boost
+            player.increaseSpeed();
             this.die(); // Remove the power-up after use
         }
     }
