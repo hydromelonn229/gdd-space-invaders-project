@@ -147,6 +147,22 @@ public class AudioPlayer {
         this.play();
     }
 
+    // Method to play sound effect once (no looping)
+    public void playSoundEffect() throws IOException, LineUnavailableException,
+            UnsupportedAudioFileException {
+        clip.stop();
+        clip.close();
+        // Reset audio stream without looping
+        audioInputStream = AudioSystem.getAudioInputStream(
+                new File(filePath).getAbsoluteFile());
+        clip.open(audioInputStream);
+        // Don't loop for sound effects
+        setVolume(0.50f); // Use higher volume for sound effects
+        currentFrame = 0L;
+        clip.setMicrosecondPosition(0);
+        clip.start(); // Start without looping
+    }
+
     // Method to stop the audio
     public void stop() throws UnsupportedAudioFileException,
             IOException, LineUnavailableException {

@@ -2,10 +2,12 @@ package gdd.scene;
 
 import gdd.AudioPlayer;
 import gdd.Game;
+import gdd.SoundEffect;
 import static gdd.Global.*;
 import gdd.SpawnDetails;
 import gdd.powerup.PowerUp;
 import gdd.powerup.SpeedUp;
+import gdd.powerup.MultiBullet;
 import gdd.sprite.Alien1;
 import gdd.sprite.Enemy;
 import gdd.sprite.Explosion;
@@ -88,6 +90,8 @@ public class Scene1 extends JPanel {
 
     private HashMap<Integer, SpawnDetails> spawnMap = new HashMap<>();
     private AudioPlayer audioPlayer;
+    private SoundEffect explosionSound;
+    private SoundEffect laserSound;
     private int lastRowToShow;
     private int firstRowToShow;
     
@@ -96,12 +100,19 @@ public class Scene1 extends JPanel {
     private final int minSpawnInterval = 30; // 0.5 seconds minimum
     private final int maxSpawnInterval = 90; // 1.5 seconds maximum  
     private final int spawnChance = 6; // 1 in 6 chance per frame when eligible
+    
+    // Random power-up spawning variables
+    private int nextPowerUpSpawnFrame = 0;
+    private final int minPowerUpInterval = 300; // 5 seconds minimum
+    private final int maxPowerUpInterval = 500; // 8 seconds maximum
+    private final int powerUpSpawnChance = 4; // 1 in 4 chance when eligible
 
     public Scene1(Game game) {
         this.game = game;
         // initBoard();
         // gameInit();
         loadSpawnDetails();
+        initAudio(); // Initialize audio and sound effects
     }
 
     private void initAudio() {
@@ -109,18 +120,23 @@ public class Scene1 extends JPanel {
             String filePath = "src/audio/scene1.wav";
             audioPlayer = new AudioPlayer(filePath);
             audioPlayer.play();
+            
+            // Initialize sound effects using the new lightweight SoundEffect system
+            explosionSound = new SoundEffect("src/audio/explosion.wav");
+            laserSound = new SoundEffect("src/audio/laser.wav");
         } catch (Exception e) {
             System.err.println("Error initializing audio player: " + e.getMessage());
         }
     }
 
     private void loadSpawnDetails() {
-        // Initialize random spawning - remove hardcoded alien spawns
-        // Keep power-up spawn for demonstration
-        spawnMap.put(50, new SpawnDetails("PowerUp-SpeedUp", 100, 0));
+        // Removed fixed power-up spawns - now using random spawning system
         
         // Set initial next spawn frame for random aliens
         nextAlienSpawnFrame = randomizer.nextInt(maxSpawnInterval - minSpawnInterval) + minSpawnInterval;
+        
+        // Set initial next spawn frame for random power-ups
+        nextPowerUpSpawnFrame = randomizer.nextInt(maxPowerUpInterval - minPowerUpInterval) + minPowerUpInterval;
     }
 
     private void initBoard() {
@@ -156,6 +172,28 @@ public class Scene1 extends JPanel {
             randomizer.nextInt(maxSpawnInterval - minSpawnInterval) + minSpawnInterval;
         nextAlienSpawnFrame = frame + baseInterval;
     }
+    
+    private void spawnRandomPowerUp() {
+        // Generate random X position within screen bounds (with margin for power-up size)
+        int randomX = randomizer.nextInt(BOARD_WIDTH - 30); // 30 is power-up width
+        
+        // Spawn power-up above screen
+        int spawnY = -30; // 30 is power-up height
+        
+        // Randomly choose between SpeedUp and MultiBullet (50/50 chance)
+        PowerUp powerUp;
+        if (randomizer.nextBoolean()) {
+            powerUp = new SpeedUp(randomX, spawnY);
+        } else {
+            powerUp = new MultiBullet(randomX, spawnY);
+        }
+        
+        powerups.add(powerUp);
+        
+        // Set next power-up spawn time
+        int nextInterval = randomizer.nextInt(maxPowerUpInterval - minPowerUpInterval) + minPowerUpInterval;
+        nextPowerUpSpawnFrame = frame + nextInterval;
+    }
 
     public void start() {
         addKeyListener(new TAdapter());
@@ -177,6 +215,12 @@ public class Scene1 extends JPanel {
         try {
             if (audioPlayer != null) {
                 audioPlayer.stop();
+            }
+            if (explosionSound != null) {
+                explosionSound.dispose();
+            }
+            if (laserSound != null) {
+                laserSound.dispose();
             }
         } catch (Exception e) {
             System.err.println("Error closing audio player.");
@@ -209,6 +253,7 @@ public class Scene1 extends JPanel {
         
         // Reset spawning
         nextAlienSpawnFrame = randomizer.nextInt(maxSpawnInterval - minSpawnInterval) + minSpawnInterval;
+        nextPowerUpSpawnFrame = randomizer.nextInt(maxPowerUpInterval - minPowerUpInterval) + minPowerUpInterval;
     }
 
     private void drawMap(Graphics g) {
@@ -370,6 +415,21 @@ public class Scene1 extends JPanel {
         g.setColor(Color.white);
         g.drawString("SCENE 1 - FRAME: " + frame, 10, 10);
         g.drawString("KILLS: " + deaths + "/" + NUMBER_OF_ALIENS_TO_DESTROY, 10, 25);
+        
+        // Show multi-bullet status
+        if (player.isMultiBulletActive()) {
+            g.setColor(Color.YELLOW);
+            int secondsLeft = (player.getMultiBulletFramesLeft() / 60) + 1;
+            g.drawString("MULTI-BULLET: " + secondsLeft + "s", 10, 40);
+        }
+        
+        // Show speed boost status
+        if (player.isSpeedBoostActive()) {
+            g.setColor(Color.CYAN);
+            int secondsLeft = (player.getSpeedBoostFramesLeft() / 60) + 1;
+            int yPos = player.isMultiBulletActive() ? 55 : 40; // Adjust position if multi-bullet is also active
+            g.drawString("SPEED BOOST: " + secondsLeft + "s", 10, yPos);
+        }
 
         g.setColor(Color.green);
 
@@ -427,27 +487,14 @@ public class Scene1 extends JPanel {
             }
         }
 
-        // Check for predefined spawns (like power-ups)
-        SpawnDetails sd = spawnMap.get(frame);
-        if (sd != null) {
-            // Create items based on spawn details
-            switch (sd.type) {
-                case "Alien1":
-                    Enemy enemy = new Alien1(sd.x, sd.y);
-                    enemies.add(enemy);
-                    break;
-                case "Alien2":
-                    // Enemy enemy2 = new Alien2(sd.x, sd.y);
-                    // enemies.add(enemy2);
-                    break;
-                case "PowerUp-SpeedUp":
-                    // Handle speed up item spawn
-                    PowerUp speedUp = new SpeedUp(sd.x, sd.y);
-                    powerups.add(speedUp);
-                    break;
-                default:
-                    System.out.println("Unknown spawn type: " + sd.type);
-                    break;
+        // Random power-up spawning system
+        if (frame >= nextPowerUpSpawnFrame) {
+            // Additional random chance to make spawning less predictable
+            if (randomizer.nextInt(powerUpSpawnChance) == 0) {
+                spawnRandomPowerUp();
+            } else {
+                // If we don't spawn this time, set a shorter next check interval
+                nextPowerUpSpawnFrame = frame + randomizer.nextInt(120) + 30;
             }
         }
 
@@ -483,12 +530,9 @@ public class Scene1 extends JPanel {
             if (enemy.isVisible()) {
                 enemy.act(direction);
                 
-                // Check if enemy has passed beyond the bottom of the screen (game over condition)
+                // Remove enemies that have passed beyond the bottom of the screen
                 if (enemy.getY() > BOARD_HEIGHT) {
-                    inGame = false;
-                    timer.stop();
-                    message = "Invasion! Enemies escaped!";
-                    break; // Exit the loop immediately when game over
+                    enemy.die(); // Mark enemy for removal
                 }
             }
             
@@ -525,6 +569,15 @@ public class Scene1 extends JPanel {
                         deaths++;
                         shot.die();
                         shotsToRemove.add(shot);
+                        
+                        // Play explosion sound
+                        try {
+                            if (explosionSound != null && explosionSound.isReady()) {
+                                explosionSound.play();
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error playing explosion sound: " + e.getMessage());
+                        }
                     }
                 }
 
@@ -666,10 +719,32 @@ public class Scene1 extends JPanel {
 
             if (key == KeyEvent.VK_SPACE && inGame) {
                 System.out.println("Shots: " + shots.size());
-                if (shots.size() < 4) {
-                    // Create a new shot and add it to the list
-                    Shot shot = new Shot(x, y);
-                    shots.add(shot);
+                
+                // Play laser sound
+                try {
+                    if (laserSound != null && laserSound.isReady()) {
+                        laserSound.play();
+                    }
+                } catch (Exception ex) {
+                    System.err.println("Error playing laser sound: " + ex.getMessage());
+                }
+                
+                if (player.isMultiBulletActive()) {
+                    // Multi-bullet mode: shoot 5 bullets in spread pattern
+                    if (shots.size() <= 10) { // Allow more shots when in multi-bullet mode
+                        int[] offsets = {-20, -10, 0, 10, 20}; // Spread pattern
+                        for (int offset : offsets) {
+                            Shot shot = new Shot(x + offset, y);
+                            shots.add(shot);
+                        }
+                    }
+                } else {
+                    // Normal mode: shoot single bullet
+                    if (shots.size() < 4) {
+                        // Create a new shot and add it to the list
+                        Shot shot = new Shot(x, y);
+                        shots.add(shot);
+                    }
                 }
             }
 

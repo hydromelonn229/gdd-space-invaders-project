@@ -72,7 +72,7 @@ public class Alien1 extends Enemy {
         // Method to move the bomb downward (faster than alien movement)
         public void act() {
             if (!destroyed) {
-                this.y += 3; // Bomb moves faster than alien (alien moves 1 pixel per frame)
+                this.y += 2; // Bomb moves faster than alien (alien moves 1 pixel per frame)
             }
         }
 

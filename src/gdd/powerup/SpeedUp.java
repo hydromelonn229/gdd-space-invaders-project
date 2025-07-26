@@ -14,10 +14,9 @@ public class SpeedUp extends PowerUp {
 
     public SpeedUp(int x, int y) {
         super(x, y);
-        // Set image
+        // Set image with consistent size for all power-ups (30x30 pixels)
         ImageIcon ii = new ImageIcon(IMG_POWERUP_SPEEDUP);
-        var scaledImage = ii.getImage().getScaledInstance(ii.getIconWidth() ,
-                ii.getIconHeight() ,
+        var scaledImage = ii.getImage().getScaledInstance(30, 30,
                 java.awt.Image.SCALE_SMOOTH);
         setImage(scaledImage);
     }
@@ -29,9 +28,11 @@ public class SpeedUp extends PowerUp {
     }
 
     public void upgrade(Player player) {
-        // Upgrade the player with speed boost
-        player.setSpeed(player.getSpeed() + 4); // Increase player's speed by 1
-        this.die(); // Remove the power-up after use
+        // Upgrade the player with temporary speed boost for 10 seconds (600 frames at 60fps)
+        if (isVisible()) {
+            player.enableSpeedBoost(600, 4); // 10 seconds, +4 speed boost
+            this.die(); // Remove the power-up after use
+        }
     }
 
 }
