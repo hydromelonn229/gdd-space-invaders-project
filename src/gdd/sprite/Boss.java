@@ -17,27 +17,33 @@ public class Boss extends Enemy {
 
     public Boss(int x, int y) {
         super(x, y);
-        initBoss(x, y);
         // Set initial cooldown so boss doesn't shoot immediately
         this.shootCooldown = SHOOT_COOLDOWN_TIME / 2;
     }
     
-    private void initBoss(int x, int y) {
-        this.x = x;
-        this.y = y;
-
-        // Use alien image for now, but scaled larger for boss
-        var ii = new ImageIcon(IMG_ENEMY);
-        
+    // Override updateImage to use boss sprites for animation
+    @Override
+    protected void updateImage() {
+        String imagePath = useFirstFrame ? IMG_BOSS_1 : IMG_BOSS_2;
+        var ii = new ImageIcon(imagePath);
+        int bossScaleFactor = 3;
         // Scale the boss to be much larger
         var scaledImage = ii.getImage().getScaledInstance(
-            BOSS_WIDTH,
-            BOSS_HEIGHT,
+            BOSS_WIDTH * bossScaleFactor,
+            BOSS_HEIGHT * bossScaleFactor,
             java.awt.Image.SCALE_SMOOTH);
         setImage(scaledImage);
     }
 
     public void act(int direction) {
+        // Handle animation first
+        animationCounter++;
+        if (animationCounter >= ANIMATION_SPEED) {
+            useFirstFrame = !useFirstFrame;
+            updateImage();
+            animationCounter = 0;
+        }
+        
         // Boss moves in zig-zag pattern (left and right only)
         this.x += this.direction * MOVE_SPEED;
         
@@ -97,9 +103,11 @@ public class Boss extends Enemy {
         return BOSS_HEIGHT;
     }
 
+
     // Boss doesn't use regular bomb system
     @Override
     public Object getBomb() {
         return null;
     }
+    
 }

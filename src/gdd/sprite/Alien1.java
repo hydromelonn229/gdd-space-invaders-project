@@ -12,6 +12,15 @@ public class Alien1 extends Enemy {
     }
 
     public void act(int direction) {
+        // Handle animation first
+        animationCounter++;
+        if (animationCounter >= ANIMATION_SPEED) {
+            useFirstFrame = !useFirstFrame;
+            updateImage();
+            animationCounter = 0;
+        }
+        
+        // Then handle movement
         this.y++; // Move alien downward
         
         // Decrease cooldown
@@ -23,7 +32,9 @@ public class Alien1 extends Enemy {
     // Implementation of abstract act() method from Sprite
     @Override
     public void act() {
-        act(0); // Use the parameterized version with no horizontal movement
+        // This is rarely called since the game uses act(direction)
+        // Just call the parameterized version with no movement
+        act(0);
     }
 
     // Check if alien can shoot

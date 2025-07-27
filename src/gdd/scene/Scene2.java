@@ -2,12 +2,12 @@ package gdd.scene;
 
 import gdd.AudioPlayer;
 import gdd.Game;
-import gdd.SoundEffect;
 import static gdd.Global.*;
+import gdd.SoundEffect;
 import gdd.SpawnDetails;
+import gdd.powerup.MultiBullet;
 import gdd.powerup.PowerUp;
 import gdd.powerup.SpeedUp;
-import gdd.powerup.MultiBullet;
 import gdd.sprite.Alien1;
 import gdd.sprite.Alien2;
 import gdd.sprite.Bomb;
@@ -46,9 +46,6 @@ public class Scene2 extends JPanel {
     private boolean bossSpawned = false;
     private boolean bossPhase = false;
 
-    final int BLOCKHEIGHT = 40;  // Smaller blocks for different visual
-    final int BLOCKWIDTH = 40;
-
     private int direction = -1;
     private int deaths = 0;
     private int requiredKills = 5; // Regular enemies before boss spawn
@@ -62,24 +59,20 @@ public class Scene2 extends JPanel {
     private Timer timer;
     private final Game game;
 
-    // Scene 2 specific background pattern - sparse asteroid field
-    private final int[][] MAP = {
-        {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
-        {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
-        {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0}
-    };
+    // Star field background - two layers with different speeds
+    private List<Star> slowStars = new ArrayList<>();  // Background layer
+    private List<Star> fastStars = new ArrayList<>();  // Foreground layer
+    
+    private static class Star {
+        int x, y;
+        int brightness; // 0-255 for different star brightness
+        
+        Star(int x, int y, int brightness) {
+            this.x = x;
+            this.y = y;
+            this.brightness = brightness;
+        }
+    }
 
     private HashMap<Integer, SpawnDetails> spawnMap = new HashMap<>();
     private AudioPlayer audioPlayer;
@@ -103,12 +96,13 @@ public class Scene2 extends JPanel {
     public Scene2(Game game) {
         this.game = game;
         loadSpawnDetails();
+        initStarField(); // Initialize the star field
         initAudio(); // Initialize audio and sound effects
     }
 
     private void initAudio() {
         try {
-            String filePath = "src/audio/beatbox.wav"; // Reuse audio for now
+            String filePath = "src/audio/edm.wav"; // Reuse audio for now
             audioPlayer = new AudioPlayer(filePath);
             audioPlayer.play();
             
@@ -117,6 +111,24 @@ public class Scene2 extends JPanel {
             laserSound = new SoundEffect("src/audio/laser.wav");
         } catch (Exception e) {
             System.err.println("Error initializing audio player: " + e.getMessage());
+        }
+    }
+
+    private void initStarField() {
+        // Create slow stars (background layer) - fewer, dimmer stars
+        for (int i = 0; i < 30; i++) {
+            int x = randomizer.nextInt(BOARD_WIDTH);
+            int y = randomizer.nextInt(BOARD_HEIGHT + 200); // Start some above screen
+            int brightness = randomizer.nextInt(100) + 80; // Dimmer stars (80-179)
+            slowStars.add(new Star(x, y, brightness));
+        }
+        
+        // Create fast stars (foreground layer) - more, brighter stars
+        for (int i = 0; i < 50; i++) {
+            int x = randomizer.nextInt(BOARD_WIDTH);
+            int y = randomizer.nextInt(BOARD_HEIGHT + 200); // Start some above screen
+            int brightness = randomizer.nextInt(100) + 155; // Brighter stars (155-255)
+            fastStars.add(new Star(x, y, brightness));
         }
     }
 
@@ -229,48 +241,35 @@ public class Scene2 extends JPanel {
     }
 
     private void drawMap(Graphics g) {
-        // Asteroid field background
-        int scrollOffset = (frame * 2) % BLOCKHEIGHT; // Faster scrolling
-        int baseRow = (frame * 2) / BLOCKHEIGHT;
-        int rowsNeeded = (BOARD_HEIGHT / BLOCKHEIGHT) + 2;
-
-        for (int screenRow = 0; screenRow < rowsNeeded; screenRow++) {
-            int mapRow = (baseRow + screenRow) % MAP.length;
-            int y = BOARD_HEIGHT - ((screenRow * BLOCKHEIGHT) - scrollOffset);
-
-            if (y > BOARD_HEIGHT || y < -BLOCKHEIGHT) {
-                continue;
+        // Update and draw slow stars (background layer) - move 1 pixel per frame
+        for (Star star : slowStars) {
+            star.y += 1; // Slow movement
+            if (star.y > BOARD_HEIGHT) {
+                // Reset star to top of screen
+                star.y = -5;
+                star.x = randomizer.nextInt(BOARD_WIDTH);
+                star.brightness = randomizer.nextInt(100) + 80; // New brightness
             }
-
-            for (int col = 0; col < MAP[mapRow].length; col++) {
-                if (MAP[mapRow][col] == 1) {
-                    int x = col * BLOCKWIDTH;
-                    drawAsteroid(g, x, y, BLOCKWIDTH, BLOCKHEIGHT);
-                }
-            }
+            
+            // Draw star as a small dot
+            g.setColor(new Color(star.brightness, star.brightness, star.brightness));
+            g.fillOval(star.x, star.y, 1, 1);
         }
-    }
-
-    private void drawAsteroid(Graphics g, int x, int y, int width, int height) {
-        // Draw asteroid-like objects
-        g.setColor(new Color(150, 150, 150)); // Gray asteroids
         
-        // Main asteroid body
-        int centerX = x + width / 2;
-        int centerY = y + height / 2;
-        g.fillOval(centerX - 8, centerY - 6, 16, 12);
-        
-        // Smaller debris
-        g.setColor(new Color(100, 100, 100));
-        g.fillOval(centerX - 15, centerY - 8, 6, 4);
-        g.fillOval(centerX + 10, centerY - 5, 4, 6);
-        g.fillOval(centerX - 5, centerY + 8, 8, 4);
-        
-        // Tiny particles
-        g.setColor(new Color(180, 180, 180));
-        g.fillOval(centerX - 18, centerY + 2, 2, 2);
-        g.fillOval(centerX + 15, centerY - 10, 2, 2);
-        g.fillOval(centerX + 2, centerY - 15, 2, 2);
+        // Update and draw fast stars (foreground layer) - move 3 pixels per frame
+        for (Star star : fastStars) {
+            star.y += 3; // Fast movement
+            if (star.y > BOARD_HEIGHT) {
+                // Reset star to top of screen
+                star.y = -5;
+                star.x = randomizer.nextInt(BOARD_WIDTH);
+                star.brightness = randomizer.nextInt(100) + 155; // New brightness
+            }
+            
+            // Draw star as a small dot (slightly larger for foreground stars)
+            g.setColor(new Color(star.brightness, star.brightness, star.brightness));
+            g.fillOval(star.x, star.y, 2, 2);
+        }
     }
 
     private void drawAliens(Graphics g) {

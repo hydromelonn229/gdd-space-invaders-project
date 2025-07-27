@@ -1,6 +1,5 @@
 package gdd.sprite;
 
-import static gdd.Global.*;
 import javax.swing.ImageIcon;
 
 public class Bomb extends Sprite {
@@ -20,7 +19,7 @@ public class Bomb extends Sprite {
 
         var bombImg = "src/images/bomb.png";
         var ii = new ImageIcon(bombImg);
-        
+        int SCALE_FACTOR = 1; // Use global scaling factor for bombs
         // Scale the bomb image to match the global scaling factor
         var scaledImage = ii.getImage().getScaledInstance(
             ii.getIconWidth() * SCALE_FACTOR,
