@@ -1,22 +1,22 @@
 package gdd.sprite;
 
-import static gdd.Global.*;
-import javax.swing.ImageIcon;
-
 public class Alien1 extends Enemy {
 
-    private Bomb bomb;
+    private int shootCooldown = 0; // Frames until alien can shoot again
+    private static final int SHOOT_COOLDOWN_TIME = 180; // 3 seconds at 60 FPS
 
     public Alien1(int x, int y) {
         super(x, y);
-        bomb = new Bomb(x, y);
+        // Set random initial cooldown so aliens don't all shoot at once
+        this.shootCooldown = (int)(Math.random() * SHOOT_COOLDOWN_TIME);
     }
 
     public void act(int direction) {
-        this.y++;
-        // Update bomb position to follow the alien when not active
-        if (bomb != null) {
-            bomb.updatePosition(this.x, this.y);
+        this.y++; // Move alien downward
+        
+        // Decrease cooldown
+        if (shootCooldown > 0) {
+            shootCooldown--;
         }
     }
 
@@ -26,63 +26,19 @@ public class Alien1 extends Enemy {
         act(0); // Use the parameterized version with no horizontal movement
     }
 
-    @Override
-    public Bomb getBomb() {
-        return bomb;
+    // Check if alien can shoot
+    public boolean canShoot() {
+        return shootCooldown <= 0;
+    }
+    
+    // Reset cooldown after shooting
+    public void resetShootCooldown() {
+        shootCooldown = SHOOT_COOLDOWN_TIME;
     }
 
-    public class Bomb extends Sprite {
-
-        private boolean destroyed;
-
-        public Bomb(int x, int y) {
-
-            initBomb(x, y);
-        }
-
-        private void initBomb(int x, int y) {
-
-            setDestroyed(true);
-
-            // Position bomb at the bottom center of the alien
-            this.x = x + (ALIEN_WIDTH / 2) - 3; // Center horizontally, adjust for bomb width
-            this.y = y + ALIEN_HEIGHT; // Position at bottom of alien
-
-            var bombImg = "src/images/bomb.png";
-            var ii = new ImageIcon(bombImg);
-            
-            // Scale the bomb image to match the global scaling factor
-            var scaledImage = ii.getImage().getScaledInstance(
-                ii.getIconWidth() * SCALE_FACTOR,
-                ii.getIconHeight() * SCALE_FACTOR,
-                java.awt.Image.SCALE_SMOOTH);
-            setImage(scaledImage);
-        }
-
-        public void setDestroyed(boolean destroyed) {
-
-            this.destroyed = destroyed;
-        }
-
-        public boolean isDestroyed() {
-
-            return destroyed;
-        }
-
-        // Method to move the bomb downward (faster than alien movement)
-        public void act() {
-            if (!destroyed) {
-                this.y += 2; // Bomb moves faster than alien (alien moves 1 pixel per frame)
-            }
-        }
-
-        // Method to update bomb position when alien moves
-        public void updatePosition(int alienX, int alienY) {
-            if (destroyed) {
-                // Keep bomb positioned relative to alien when not active
-                this.x = alienX + (ALIEN_WIDTH / 2) - 3;
-                this.y = alienY + ALIEN_HEIGHT;
-            }
-        }
+    // Alien1 no longer manages its own bomb - bombs are now managed separately
+    @Override
+    public Object getBomb() {
+        return null; // No longer has integrated bomb
     }
 }

@@ -29,8 +29,8 @@ public class MultiBullet extends PowerUp {
     @Override
     public void upgrade(Player player) {
         if (isVisible()) {
-            // Enable multi-bullet for 15 seconds (900 frames at 60fps)
-            player.enableMultiBullet(900);
+            // Increase the player's maximum shot limit by 1 (up to 4 total)
+            player.increaseShotLimit();
             this.die(); // Remove the power-up after collection
         }
     }
