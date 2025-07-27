@@ -23,10 +23,23 @@ abstract public class Sprite {
         if (other == null || !this.isVisible() || !other.isVisible()) {
             return false;
         }
-        return this.getX() < other.getX() + other.getImage().getWidth(null)
-                && this.getX() + this.getImage().getWidth(null) > other.getX()
-                && this.getY() < other.getY() + other.getImage().getHeight(null)
-                && this.getY() + this.getImage().getHeight(null) > other.getY();
+        
+        // Use safer collision detection with null checks and minimum dimensions
+        int thisWidth = (this.getImage() != null) ? this.getImage().getWidth(null) : 16;
+        int thisHeight = (this.getImage() != null) ? this.getImage().getHeight(null) : 16;
+        int otherWidth = (other.getImage() != null) ? other.getImage().getWidth(null) : 16;
+        int otherHeight = (other.getImage() != null) ? other.getImage().getHeight(null) : 16;
+        
+        // Ensure minimum collision box size to prevent inconsistencies
+        thisWidth = Math.max(thisWidth, 16);
+        thisHeight = Math.max(thisHeight, 16);
+        otherWidth = Math.max(otherWidth, 16);
+        otherHeight = Math.max(otherHeight, 16);
+        
+        return this.getX() < other.getX() + otherWidth
+                && this.getX() + thisWidth > other.getX()
+                && this.getY() < other.getY() + otherHeight
+                && this.getY() + thisHeight > other.getY();
     }
 
     public void die() {
