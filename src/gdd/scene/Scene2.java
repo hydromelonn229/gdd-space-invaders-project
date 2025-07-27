@@ -102,7 +102,7 @@ public class Scene2 extends JPanel {
 
     private void initAudio() {
         try {
-            String filePath = "src/audio/beatbox.wav"; // Reuse audio for now
+            String filePath = "src/audio/edm.wav"; // Reuse audio for now
             audioPlayer = new AudioPlayer(filePath);
             audioPlayer.play();
             

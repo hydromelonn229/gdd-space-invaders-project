@@ -2,12 +2,12 @@ package gdd.scene;
 
 import gdd.AudioPlayer;
 import gdd.Game;
-import gdd.SoundEffect;
 import static gdd.Global.*;
+import gdd.SoundEffect;
 import gdd.SpawnDetails;
+import gdd.powerup.MultiBullet;
 import gdd.powerup.PowerUp;
 import gdd.powerup.SpeedUp;
-import gdd.powerup.MultiBullet;
 import gdd.sprite.Alien1;
 import gdd.sprite.Alien2;
 import gdd.sprite.Bomb;
@@ -535,7 +535,7 @@ public class Scene1 extends JPanel {
         if (deaths == NUMBER_OF_ALIENS_TO_DESTROY) {
             inGame = false;
             timer.stop();
-            message = "Scene 1 Complete! Loading Scene 2...";
+            message = "Stage 1 Complete! Proceeding to Stage 2...";
             // Transition to Scene 2 after a delay
             Timer transitionTimer = new Timer(3000, e -> {
                 ((Timer)e.getSource()).stop();

@@ -149,7 +149,7 @@ public class TitleScene extends JPanel {
             int key = e.getKeyCode();
             if (key == KeyEvent.VK_SPACE) {
                 // Load Scene 1 (first gameplay scene)
-                game.loadScene2();
+                game.loadScene1();
             }
 
         }

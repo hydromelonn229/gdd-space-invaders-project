@@ -23,7 +23,7 @@ public class Player extends Sprite {
     private int animationCounter = 0;
     private static final int ANIMATION_SPEED = 15; // frames between animation changes
 
-    private Rectangle bounds = new Rectangle(175,135,17,32);
+    private Rectangle bounds = new Rectangle(175,100,17,32);
 
     public Player() {
         initPlayer();

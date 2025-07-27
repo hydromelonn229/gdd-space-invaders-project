@@ -12,10 +12,10 @@ public class MultiBullet extends PowerUp {
 
     private void initPowerUp() {
         var ii = new ImageIcon("src/images/bullet.png");
-        
+        int SCALE_FACTOR = 2; // Use global scaling factor for power-ups
         // Set consistent size for all power-ups (30x30 pixels)
         var scaledImage = ii.getImage().getScaledInstance(
-            30, 30,
+            30 * SCALE_FACTOR, 30 * SCALE_FACTOR,
             java.awt.Image.SCALE_SMOOTH);
         setImage(scaledImage);
     }

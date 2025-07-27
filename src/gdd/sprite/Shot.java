@@ -5,8 +5,8 @@ import javax.swing.ImageIcon;
 
 public class Shot extends Sprite {
 
-    private static final int H_SPACE = 50;
-    private static final int V_SPACE = -3;
+    private static final int H_SPACE = 40;
+    private static final int V_SPACE = 10;
 
     public Shot() {
     }
@@ -19,7 +19,7 @@ public class Shot extends Sprite {
     private void initShot(int x, int y) {
 
         var ii = new ImageIcon(IMG_SHOT);
-
+        int SCALE_FACTOR = 1; // Use global scaling factor for shots
         // Scale the image to use the global scaling factor
         var scaledImage = ii.getImage().getScaledInstance(ii.getIconWidth() * SCALE_FACTOR,
                 ii.getIconHeight() * SCALE_FACTOR, 

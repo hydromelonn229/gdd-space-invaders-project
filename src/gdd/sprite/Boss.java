@@ -109,4 +109,5 @@ public class Boss extends Enemy {
     public Object getBomb() {
         return null;
     }
+    
 }
