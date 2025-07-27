@@ -84,22 +84,4 @@ public class Alien2 extends Enemy {
     public Object getBomb() {
         return null;
     }
-    
-    // Method to check if this alien collides with the player
-    public boolean collidesWithPlayer(Player player) {
-        if (!this.isVisible() || !player.isVisible()) {
-            return false;
-        }
-        
-        int alienX = this.getX();
-        int alienY = this.getY();
-        int playerX = player.getX();
-        int playerY = player.getY();
-        
-        // Check collision using bounding boxes
-        return (alienX < playerX + PLAYER_WIDTH &&
-                alienX + ALIEN_WIDTH > playerX &&
-                alienY < playerY + PLAYER_HEIGHT &&
-                alienY + ALIEN_HEIGHT > playerY);
-    }
 }

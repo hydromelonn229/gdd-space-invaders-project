@@ -25,8 +25,8 @@ public class Global {
     public static final int NUMBER_OF_ALIENS_TO_DESTROY = 10; // 5-minute target (Scene 1)
     public static final int CHANCE = 5;
     public static final int DELAY = 17;
-    public static final int PLAYER_WIDTH = 30; // Doubled from 15
-    public static final int PLAYER_HEIGHT = 20; // Doubled from 10
+    public static final int PLAYER_WIDTH = 100; // Updated to match actual rendered size
+    public static final int PLAYER_HEIGHT = 100; // Updated to match actual rendered size
 
     // Images
     public static final String IMG_ENEMY = "src/images/alien.png";

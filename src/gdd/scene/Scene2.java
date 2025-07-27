@@ -4,7 +4,6 @@ import gdd.AudioPlayer;
 import gdd.Game;
 import static gdd.Global.*;
 import gdd.SoundEffect;
-import gdd.SpawnDetails;
 import gdd.powerup.MultiBullet;
 import gdd.powerup.PowerUp;
 import gdd.powerup.SpeedUp;
@@ -20,13 +19,13 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import javax.swing.ImageIcon;
@@ -47,11 +46,13 @@ public class Scene2 extends JPanel {
     private boolean bossPhase = false;
 
     private int direction = -1;
-    private int deaths = 0;
-    private int requiredKills = 5; // Regular enemies before boss spawn
+    private int score = 0; // Changed from deaths to score
 
     private boolean inGame = true;
     private String message = "Game Over";
+
+    // Scene objectives - survive for 3 minutes, then spawn boss
+    private final int SCENE_DURATION = 10800; // 3 minutes at 60 FPS
 
     private final Dimension d = new Dimension(BOARD_WIDTH, BOARD_HEIGHT);
     private final Random randomizer = new Random();
@@ -74,7 +75,6 @@ public class Scene2 extends JPanel {
         }
     }
 
-    private HashMap<Integer, SpawnDetails> spawnMap = new HashMap<>();
     private AudioPlayer audioPlayer;
     private SoundEffect explosionSound;
     private SoundEffect laserSound;
@@ -234,7 +234,7 @@ public class Scene2 extends JPanel {
         shots = new ArrayList<>();
         bombs = new ArrayList<>();
         player = new Player();
-        deaths = 0; // Reset death count for new scene
+        score = 0; // Reset score for new scene
         
         // Reset power-up spawning
         nextPowerUpSpawnFrame = randomizer.nextInt(maxPowerUpInterval - minPowerUpInterval) + minPowerUpInterval;
@@ -291,7 +291,7 @@ public class Scene2 extends JPanel {
             int healthBarWidth = 200;
             int healthBarHeight = 20;
             int healthBarX = (BOARD_WIDTH - healthBarWidth) / 2;
-            int healthBarY = 90; // Below dashboard
+            int healthBarY = 30; // Moved up from 90 to 50 for better visibility
             
             // Background
             g.setColor(Color.RED);
@@ -299,7 +299,7 @@ public class Scene2 extends JPanel {
             
             // Health
             g.setColor(Color.GREEN);
-            int currentHealthWidth = (healthBarWidth * boss.getHealth()) / 20; // 20 is max health
+            int currentHealthWidth = (healthBarWidth * boss.getHealth()) / 100; // 100 is max health
             g.fillRect(healthBarX, healthBarY, currentHealthWidth, healthBarHeight);
             
             // Border
@@ -335,6 +335,7 @@ public class Scene2 extends JPanel {
         if (player.isDying()) {
             player.die();
             inGame = false;
+            message = "Game Over"; // Reset message when player dies
         }
     }
 
@@ -416,11 +417,21 @@ public class Scene2 extends JPanel {
         g.setColor(Color.WHITE);
         g.drawRect(0, 0, BOARD_WIDTH - 1, 80 - 1);
         
-        // Calculate time elapsed (assuming 60 FPS)
+        // Calculate time elapsed and remaining (assuming 60 FPS)
         int seconds = frame / 60;
         int minutes = seconds / 60;
         seconds = seconds % 60;
         String timeStr = String.format("%02d:%02d", minutes, seconds);
+        
+        // Calculate time remaining until boss spawn (if not spawned yet)
+        String remainingTimeStr = "";
+        if (!bossSpawned) {
+            int remainingFrames = SCENE_DURATION - frame;
+            int remainingSeconds = Math.max(0, remainingFrames / 60);
+            int remainingMinutes = remainingSeconds / 60;
+            remainingSeconds = remainingSeconds % 60;
+            remainingTimeStr = String.format("%02d:%02d", remainingMinutes, remainingSeconds);
+        }
         
         // Dashboard content
         g.setColor(Color.WHITE);
@@ -428,20 +439,18 @@ public class Scene2 extends JPanel {
         
         // Line 1: Scene info and Timer
         if (bossPhase) {
-            g.drawString("SCENE 2 - BOSS FIGHT", 10, 15);
+            g.drawString("STAGE 2 - BOSS FIGHT", 10, 15);
         } else {
-            g.drawString("SCENE 2 - FINAL", 10, 15);
+            g.drawString("STAGE 2 - SURVIVE 3 MIN", 10, 15);
         }
-        g.drawString("TIME: " + timeStr, 140, 15);
-        g.drawString("FRAME: " + frame, 240, 15);
+        g.drawString("TIME: " + timeStr, 180, 15);
+        if (!bossSpawned) {
+            g.drawString("BOSS IN: " + remainingTimeStr, 260, 15);
+        }
         
         // Line 2: Score
         g.setColor(Color.YELLOW);
-        if (bossPhase && boss != null) {
-            g.drawString("BOSS HP: " + boss.getHealth() + "/20", 10, 35);
-        } else {
-            g.drawString("SCORE: " + deaths + "/" + requiredKills, 10, 35);
-        }
+        g.drawString("SCORE: " + score, 10, 35);
         
         // Line 3: Player Status
         g.setColor(Color.CYAN);
@@ -473,8 +482,8 @@ public class Scene2 extends JPanel {
     }
 
     private void update() {
-        // Random alien spawning (only if boss hasn't spawned)
-        if (!bossSpawned && frame >= nextAlienSpawnFrame) {
+        // Random alien spawning (continues even during boss fight)
+        if (frame >= nextAlienSpawnFrame) {
             if (randomizer.nextInt(spawnChance) == 0) {
                 spawnRandomAlien();
             } else {
@@ -493,8 +502,8 @@ public class Scene2 extends JPanel {
             }
         }
 
-        // Boss spawning logic
-        if (deaths >= requiredKills && !bossSpawned) {
+        // Boss spawning logic - spawn after surviving 1 minute
+        if (frame >= SCENE_DURATION && !bossSpawned) {
             // Spawn boss
             boss = new Boss(BOARD_WIDTH / 2 - 40, 120); // Center horizontally, below dashboard
             bossSpawned = true;
@@ -537,7 +546,7 @@ public class Scene2 extends JPanel {
                 // Check for Alien2 collision with player (kamikaze attack)
                 if (enemy instanceof Alien2) {
                     Alien2 alien2 = (Alien2) enemy;
-                    if (alien2.collidesWithPlayer(player)) {
+                    if (alien2.collidesWith(player)) {
                         // Player dies on collision with Alien2
                         var ii = new ImageIcon(IMG_EXPLOSION);
                         player.setImage(ii.getImage());
@@ -595,49 +604,52 @@ public class Scene2 extends JPanel {
         List<Shot> shotsToRemove = new ArrayList<>();
         for (Shot shot : shots) {
             if (shot.isVisible()) {
-                int shotX = shot.getX();
-                int shotY = shot.getY();
-
                 for (Enemy enemy : enemies) {
-                    int enemyX = enemy.getX();
-                    int enemyY = enemy.getY();
-
-                    if (enemy.isVisible() && shot.isVisible()
-                            && shotX >= (enemyX)
-                            && shotX <= (enemyX + ALIEN_WIDTH)
-                            && shotY >= (enemyY)
-                            && shotY <= (enemyY + ALIEN_HEIGHT)) {
-
-                        var ii = new ImageIcon(IMG_EXPLOSION);
-                        enemy.setImage(ii.getImage());
-                        enemy.setDying(true);
-                        explosions.add(new Explosion(enemyX, enemyY));
-                        deaths++;
-                        shot.die();
-                        shotsToRemove.add(shot);
+                    if (enemy.isVisible() && shot.isVisible()) {
+                        Rectangle shotBounds = new Rectangle(shot.getX(), shot.getY(),
+                            shot.getImage() != null ? shot.getImage().getWidth(null) : 8,
+                            shot.getImage() != null ? shot.getImage().getHeight(null) : 8);
+                        Rectangle enemyBounds = enemy.getBounds();
                         
-                        // Play explosion sound
-                        try {
-                            if (explosionSound != null && explosionSound.isReady()) {
-                                explosionSound.play();
+                        if (shotBounds.intersects(enemyBounds)) {
+                            var ii = new ImageIcon(IMG_EXPLOSION);
+                            enemy.setImage(ii.getImage());
+                            enemy.setDying(true);
+                            explosions.add(new Explosion(enemy.getX(), enemy.getY()));
+                            
+                            // Add points based on enemy type
+                            if (enemy instanceof Alien1) {
+                                score += 10; // Alien1 gives 10 points
+                            } else if (enemy instanceof Alien2) {
+                                score += 20; // Alien2 (kamikaze) gives 20 points
                             }
-                        } catch (Exception e) {
-                            System.err.println("Error playing explosion sound: " + e.getMessage());
+                            
+                            shot.die();
+                            shotsToRemove.add(shot);
+                            
+                            // Play explosion sound
+                            try {
+                                if (explosionSound != null && explosionSound.isReady()) {
+                                    explosionSound.play();
+                                }
+                            } catch (Exception e) {
+                                System.err.println("Error playing explosion sound: " + e.getMessage());
+                            }
                         }
                     }
                 }
 
                 // Check collision with boss
                 if (boss != null && boss.isVisible() && shot.isVisible()) {
-                    int bossX = boss.getX();
-                    int bossY = boss.getY();
+                    Rectangle shotBounds = new Rectangle(shot.getX(), shot.getY(),
+                        shot.getImage() != null ? shot.getImage().getWidth(null) : 8,
+                        shot.getImage() != null ? shot.getImage().getHeight(null) : 8);
+                    Rectangle bossBounds = boss.getBounds();
                     
-                    if (shotX >= bossX && shotX <= (bossX + boss.getBossWidth())
-                            && shotY >= bossY && shotY <= (bossY + boss.getBossHeight())) {
-                        
+                    if (shotBounds.intersects(bossBounds)) {
                         // Boss takes damage
                         boss.takeDamage();
-                        explosions.add(new Explosion(shotX, shotY));
+                        explosions.add(new Explosion(shot.getX(), shot.getY()));
                         shot.die();
                         shotsToRemove.add(shot);
                         
@@ -653,7 +665,7 @@ public class Scene2 extends JPanel {
                 }
 
                 int y = shot.getY();
-                y -= 20;
+                y -= 10; // Reduced from 20 to 10 for slower movement
 
                 if (y < 0) {
                     shot.die();
@@ -692,22 +704,20 @@ public class Scene2 extends JPanel {
                 continue;
             }
             
-            int bombX = bomb.getX();
-            int bombY = bomb.getY();
-            int playerX = player.getX();
-            int playerY = player.getY();
-
-            if (player.isVisible() && !bomb.isDestroyed()
-                    && bombX >= (playerX)
-                    && bombX <= (playerX + PLAYER_WIDTH)
-                    && bombY >= (playerY)
-                    && bombY <= (playerY + PLAYER_HEIGHT)) {
-
-                var ii = new ImageIcon(IMG_EXPLOSION);
-                player.setImage(ii.getImage());
-                player.setDying(true);
-                bomb.setDestroyed(true);
-                bombsToRemove.add(bomb);
+            // Check collision with player using new hitbox system
+            if (player.isVisible() && !bomb.isDestroyed()) {
+                Rectangle playerBounds = player.getBounds();
+                Rectangle bombBounds = new Rectangle(bomb.getX(), bomb.getY(), 
+                    bomb.getImage() != null ? bomb.getImage().getWidth(null) : 8,
+                    bomb.getImage() != null ? bomb.getImage().getHeight(null) : 8);
+                
+                if (playerBounds.intersects(bombBounds)) {
+                    var ii = new ImageIcon(IMG_EXPLOSION);
+                    player.setImage(ii.getImage());
+                    player.setDying(true);
+                    bomb.setDestroyed(true);
+                    bombsToRemove.add(bomb);
+                }
             }
             
             if (!bomb.isDestroyed()) {

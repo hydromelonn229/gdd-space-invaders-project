@@ -23,7 +23,11 @@ public class Player extends Sprite {
     private int animationCounter = 0;
     private static final int ANIMATION_SPEED = 15; // frames between animation changes
 
-    private Rectangle bounds = new Rectangle(175,100,17,32);
+    // Hitbox dimensions for ship-like shape
+    private static final int HITBOX_WIDTH = 60;  // Narrower than full sprite
+    private static final int HITBOX_HEIGHT = 40; // Most of the sprite height
+    private static final int HITBOX_OFFSET_X = 20; // Center the hitbox horizontally
+    private static final int HITBOX_OFFSET_Y = 30; // Offset from top to account for ship shape
 
     public Player() {
         initPlayer();
@@ -97,8 +101,8 @@ public class Player extends Sprite {
 
         if (x <= 2) {
             x = 2;
-        } else if (x >= BOARD_WIDTH - (PLAYER_WIDTH * SCALE_FACTOR) + 30) {
-            x = BOARD_WIDTH - (PLAYER_WIDTH * SCALE_FACTOR) + 30;
+        } else if (x >= BOARD_WIDTH - PLAYER_WIDTH - 30) {
+            x = BOARD_WIDTH - PLAYER_WIDTH - 30;
         }
     }
 
@@ -136,6 +140,43 @@ public class Player extends Sprite {
     // Check if player has any speed upgrades (for display purposes)
     public boolean hasSpeedUpgrades() {
         return speedUpgrades > 0;
+    }
+
+    // Get the hitbox bounds for collision detection
+    public Rectangle getBounds() {
+        return new Rectangle(
+            x + HITBOX_OFFSET_X, 
+            y + HITBOX_OFFSET_Y, 
+            HITBOX_WIDTH, 
+            HITBOX_HEIGHT
+        );
+    }
+
+    // Override collision detection to use custom hitbox
+    @Override
+    public boolean collidesWith(Sprite other) {
+        if (other == null || !this.isVisible() || !other.isVisible()) {
+            return false;
+        }
+        
+        Rectangle thisBounds = this.getBounds();
+        
+        // If other sprite has getBounds method, use it
+        Rectangle otherBounds;
+        if (other instanceof Player) {
+            otherBounds = ((Player) other).getBounds();
+        } else if (other instanceof Enemy) {
+            otherBounds = ((Enemy) other).getBounds();
+        } else {
+            // For other sprites, use image dimensions
+            int otherWidth = (other.getImage() != null) ? other.getImage().getWidth(null) : 16;
+            int otherHeight = (other.getImage() != null) ? other.getImage().getHeight(null) : 16;
+            otherWidth = Math.max(otherWidth, 16);
+            otherHeight = Math.max(otherHeight, 16);
+            otherBounds = new Rectangle(other.getX(), other.getY(), otherWidth, otherHeight);
+        }
+        
+        return thisBounds.intersects(otherBounds);
     }
 
     public void keyPressed(KeyEvent e) {

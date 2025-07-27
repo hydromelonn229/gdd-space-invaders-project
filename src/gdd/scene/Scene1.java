@@ -4,7 +4,6 @@ import gdd.AudioPlayer;
 import gdd.Game;
 import static gdd.Global.*;
 import gdd.SoundEffect;
-import gdd.SpawnDetails;
 import gdd.powerup.MultiBullet;
 import gdd.powerup.PowerUp;
 import gdd.powerup.SpeedUp;
@@ -19,13 +18,13 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import javax.swing.ImageIcon;
@@ -49,10 +48,14 @@ public class Scene1 extends JPanel {
     final int BLOCKS_TO_DRAW = BOARD_HEIGHT / BLOCKHEIGHT;
 
     private int direction = -1;
-    private int deaths = 0;
+    private int score = 0; // Changed from deaths to score
+    private int highScore = 0; // Track high score
 
     private boolean inGame = true;
     private String message = "Game Over";
+
+    // Scene objectives - survive for 5 minutes (5 * 60 seconds * 60 FPS = 18000 frames)
+    private final int SCENE_DURATION = 18000; // 5 minutes at 60 FPS
 
     private final Dimension d = new Dimension(BOARD_WIDTH, BOARD_HEIGHT);
     private final Random randomizer = new Random();
@@ -60,9 +63,8 @@ public class Scene1 extends JPanel {
     private Timer timer;
     private final Game game;
 
-    private int currentRow = -1;
     // TODO load this map from a file
-    private int mapOffset = 0;
+
     private final int[][] MAP = {
         {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -89,13 +91,10 @@ public class Scene1 extends JPanel {
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
     };
-
-    private HashMap<Integer, SpawnDetails> spawnMap = new HashMap<>();
+    
     private AudioPlayer audioPlayer;
     private SoundEffect explosionSound;
     private SoundEffect laserSound;
-    private int lastRowToShow;
-    private int firstRowToShow;
     
     // Random spawning variables - adjusted for 5-minute gameplay
     private int nextAlienSpawnFrame = 0;
@@ -139,10 +138,6 @@ public class Scene1 extends JPanel {
         
         // Set initial next spawn frame for random power-ups
         nextPowerUpSpawnFrame = randomizer.nextInt(maxPowerUpInterval - minPowerUpInterval) + minPowerUpInterval;
-    }
-
-    private void initBoard() {
-
     }
     
     private void spawnRandomAlien() {
@@ -243,7 +238,7 @@ public class Scene1 extends JPanel {
         bombs = new ArrayList<>(); // Initialize independent bombs list
         
         // Reset game state
-        deaths = 0;
+        score = 0; // Reset score instead of deaths
         frame = 0;
         inGame = true;
         message = "Game Over";
@@ -459,24 +454,31 @@ public class Scene1 extends JPanel {
         g.setColor(Color.WHITE);
         g.drawRect(0, 0, BOARD_WIDTH - 1, 80 - 1);
         
-        // Calculate time elapsed (assuming 60 FPS)
+        // Calculate time elapsed and remaining (assuming 60 FPS)
         int seconds = frame / 60;
         int minutes = seconds / 60;
         seconds = seconds % 60;
         String timeStr = String.format("%02d:%02d", minutes, seconds);
+        
+        // Calculate time remaining for the scene
+        int remainingFrames = SCENE_DURATION - frame;
+        int remainingSeconds = Math.max(0, remainingFrames / 60);
+        int remainingMinutes = remainingSeconds / 60;
+        remainingSeconds = remainingSeconds % 60;
+        String remainingTimeStr = String.format("%02d:%02d", remainingMinutes, remainingSeconds);
         
         // Dashboard content
         g.setColor(Color.WHITE);
         g.setFont(g.getFont().deriveFont(12f));
         
         // Line 1: Scene info and Timer
-        g.drawString("SCENE 1", 10, 15);
-        g.drawString("TIME: " + timeStr, 120, 15);
-        g.drawString("FRAME: " + frame, 220, 15);
+        g.drawString("STAGE 1 - SURVIVE 5 MINUTES", 10, 15);
+        g.drawString("TIME: " + timeStr, 180, 15);
+        g.drawString("REMAINING: " + remainingTimeStr, 260, 15);
         
         // Line 2: Score
         g.setColor(Color.YELLOW);
-        g.drawString("SCORE: " + deaths + "/" + NUMBER_OF_ALIENS_TO_DESTROY, 10, 35);
+        g.drawString("SCORE: " + score, 10, 35);
         
         // Line 3: Player Status
         g.setColor(Color.CYAN);
@@ -532,10 +534,15 @@ public class Scene1 extends JPanel {
             }
         }
 
-        if (deaths == NUMBER_OF_ALIENS_TO_DESTROY) {
+        // Check if player survived for 1 minute
+        if (frame >= SCENE_DURATION) {
             inGame = false;
             timer.stop();
-            message = "Stage 1 Complete! Proceeding to Stage 2...";
+            // Update high score if current score is higher
+            if (score > highScore) {
+                highScore = score;
+            }
+            message = "Scene 1 Complete! Proceeding to Scene 2...";
             // Transition to Scene 2 after a delay
             Timer transitionTimer = new Timer(3000, e -> {
                 ((Timer)e.getSource()).stop();
@@ -567,7 +574,7 @@ public class Scene1 extends JPanel {
                 // Check for Alien2 collision with player (kamikaze attack)
                 if (enemy instanceof Alien2) {
                     Alien2 alien2 = (Alien2) enemy;
-                    if (alien2.collidesWithPlayer(player)) {
+                    if (alien2.collidesWith(player)) {
                         // Player dies on collision with Alien2
                         var ii = new ImageIcon(IMG_EXPLOSION);
                         player.setImage(ii.getImage());
@@ -607,42 +614,45 @@ public class Scene1 extends JPanel {
         for (Shot shot : shots) {
 
             if (shot.isVisible()) {
-                int shotX = shot.getX();
-                int shotY = shot.getY();
-
                 for (Enemy enemy : enemies) {
-                    // Collision detection: shot and enemy
-                    int enemyX = enemy.getX();
-                    int enemyY = enemy.getY();
-
-                    if (enemy.isVisible() && shot.isVisible()
-                            && shotX >= (enemyX)
-                            && shotX <= (enemyX + ALIEN_WIDTH)
-                            && shotY >= (enemyY)
-                            && shotY <= (enemyY + ALIEN_HEIGHT)) {
-
-                        var ii = new ImageIcon(IMG_EXPLOSION);
-                        enemy.setImage(ii.getImage());
-                        enemy.setDying(true);
-                        explosions.add(new Explosion(enemyX, enemyY));
-                        deaths++;
-                        shot.die();
-                        shotsToRemove.add(shot);
+                    // Collision detection: shot and enemy using hitbox system
+                    if (enemy.isVisible() && shot.isVisible()) {
+                        Rectangle shotBounds = new Rectangle(shot.getX(), shot.getY(),
+                            shot.getImage() != null ? shot.getImage().getWidth(null) : 8,
+                            shot.getImage() != null ? shot.getImage().getHeight(null) : 8);
+                        Rectangle enemyBounds = enemy.getBounds();
                         
-                        // Play explosion sound
-                        try {
-                            if (explosionSound != null && explosionSound.isReady()) {
-                                explosionSound.play();
+                        if (shotBounds.intersects(enemyBounds)) {
+                            var ii = new ImageIcon(IMG_EXPLOSION);
+                            enemy.setImage(ii.getImage());
+                            enemy.setDying(true);
+                            explosions.add(new Explosion(enemy.getX(), enemy.getY()));
+                            
+                            // Add points based on enemy type
+                            if (enemy instanceof Alien1) {
+                                score += 10; // Alien1 gives 10 points
+                            } else if (enemy instanceof Alien2) {
+                                score += 20; // Alien2 (kamikaze) gives 20 points
                             }
-                        } catch (Exception e) {
-                            System.err.println("Error playing explosion sound: " + e.getMessage());
+                            
+                            shot.die();
+                            shotsToRemove.add(shot);
+                            
+                            // Play explosion sound
+                            try {
+                                if (explosionSound != null && explosionSound.isReady()) {
+                                    explosionSound.play();
+                                }
+                            } catch (Exception e) {
+                                System.err.println("Error playing explosion sound: " + e.getMessage());
+                            }
                         }
                     }
                 }
 
                 int y = shot.getY();
                 // y -= 4;
-                y -= 20;
+                y -= 10; // Reduced from 20 to 10 for slower movement
 
                 if (y < 0) {
                     shot.die();
@@ -710,23 +720,20 @@ public class Scene1 extends JPanel {
                 continue;
             }
             
-            // Check collision with player
-            int bombX = bomb.getX();
-            int bombY = bomb.getY();
-            int playerX = player.getX();
-            int playerY = player.getY();
-
-            if (player.isVisible() && !bomb.isDestroyed()
-                    && bombX >= (playerX)
-                    && bombX <= (playerX + PLAYER_WIDTH)
-                    && bombY >= (playerY)
-                    && bombY <= (playerY + PLAYER_HEIGHT)) {
-
-                var ii = new ImageIcon(IMG_EXPLOSION);
-                player.setImage(ii.getImage());
-                player.setDying(true);
-                bomb.setDestroyed(true);
-                bombsToRemove.add(bomb);
+            // Check collision with player using new hitbox system
+            if (player.isVisible() && !bomb.isDestroyed()) {
+                Rectangle playerBounds = player.getBounds();
+                Rectangle bombBounds = new Rectangle(bomb.getX(), bomb.getY(), 
+                    bomb.getImage() != null ? bomb.getImage().getWidth(null) : 8,
+                    bomb.getImage() != null ? bomb.getImage().getHeight(null) : 8);
+                
+                if (playerBounds.intersects(bombBounds)) {
+                    var ii = new ImageIcon(IMG_EXPLOSION);
+                    player.setImage(ii.getImage());
+                    player.setDying(true);
+                    bomb.setDestroyed(true);
+                    bombsToRemove.add(bomb);
+                }
             }
             
             // Move the bomb

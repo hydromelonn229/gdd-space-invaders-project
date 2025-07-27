@@ -10,8 +10,8 @@ public class SpeedUp extends PowerUp {
         super(x, y);
         // Set image with consistent size for all power-ups (30x30 pixels)
         ImageIcon ii = new ImageIcon(IMG_POWERUP_SPEEDUP);
-        int SCALE_FACTOR = 2; // Use global scaling factor for power-ups
-        var scaledImage = ii.getImage().getScaledInstance(30 * SCALE_FACTOR, 30 * SCALE_FACTOR,
+        int SCALE_FACTOR = 1; // Use global scaling factor for power-ups
+        var scaledImage = ii.getImage().getScaledInstance(45 * SCALE_FACTOR, 45 * SCALE_FACTOR,
                 java.awt.Image.SCALE_SMOOTH);
         setImage(scaledImage);
     }

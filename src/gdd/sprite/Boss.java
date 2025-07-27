@@ -1,13 +1,14 @@
 package gdd.sprite;
 
 import static gdd.Global.*;
+import java.awt.Rectangle;
 import javax.swing.ImageIcon;
 
 public class Boss extends Enemy {
 
-    private int health = 20; // Boss needs 20 shots to kill
+    private int health = 100; // Boss needs 100 shots to kill
     private int shootCooldown = 0; // Frames until boss can shoot again
-    private static final int SHOOT_COOLDOWN_TIME = 300; // 5 seconds at 60 FPS
+    private static final int SHOOT_COOLDOWN_TIME = 180; // 3 seconds at 60 FPS
     private int direction = 1; // 1 for right, -1 for left
     private static final int MOVE_SPEED = 2; // Pixels per frame for zig-zag movement
     
@@ -101,6 +102,24 @@ public class Boss extends Enemy {
     
     public int getBossHeight() {
         return BOSS_HEIGHT;
+    }
+
+    // Override getBounds to provide boss-specific hitbox
+    @Override
+    public Rectangle getBounds() {
+        // Boss hitbox should be smaller than full sprite for fair gameplay
+        // Use about 70% of the actual rendered size
+        int actualWidth = BOSS_WIDTH * 3; // 240 pixels
+        int actualHeight = BOSS_HEIGHT * 3; // 180 pixels
+        
+        int hitboxWidth = (int)(actualWidth * 0.5); // 168 pixels
+        int hitboxHeight = (int)(actualHeight * 0.35); // 126 pixels
+        
+        // Center the hitbox around the boss position
+        int hitboxX = x - (hitboxWidth / 2);
+        int hitboxY = y - (hitboxHeight / 2);
+        
+        return new Rectangle(hitboxX, hitboxY, hitboxWidth, hitboxHeight);
     }
 
 

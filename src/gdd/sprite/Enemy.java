@@ -1,6 +1,7 @@
 package gdd.sprite;
 
 import static gdd.Global.*;
+import java.awt.Rectangle;
 import javax.swing.ImageIcon;
 
 public class Enemy extends Sprite {
@@ -9,6 +10,12 @@ public class Enemy extends Sprite {
     protected boolean useFirstFrame = true;
     protected int animationCounter = 0;
     protected static final int ANIMATION_SPEED = 10; // frames between animation changes - reduced for faster animation
+
+    // Hitbox dimensions for enemy sprites
+    protected static final int ENEMY_HITBOX_WIDTH = 28;  // Slightly smaller than sprite for fairer gameplay
+    protected static final int ENEMY_HITBOX_HEIGHT = 28; // Square hitbox for aliens
+    protected static final int ENEMY_HITBOX_OFFSET_X = 0; // No additional offset needed since we center around x,y
+    protected static final int ENEMY_HITBOX_OFFSET_Y = 0; // No additional offset needed since we center around x,y
 
     public Enemy(int x, int y) {
 
@@ -81,32 +88,45 @@ public class Enemy extends Sprite {
         return y;
     }
 
-    // Override collision detection to use consistent hit box regardless of animation frame
+    // Get the hitbox bounds for collision detection
+    public Rectangle getBounds() {
+        // Use raw coordinates (x, y) instead of adjusted getX(), getY() to avoid double offset
+        int hitboxX = x - (ENEMY_HITBOX_WIDTH / 2) + ENEMY_HITBOX_OFFSET_X;
+        int hitboxY = y - (ENEMY_HITBOX_HEIGHT / 2) + ENEMY_HITBOX_OFFSET_Y;
+        
+        return new Rectangle(
+            hitboxX, 
+            hitboxY, 
+            ENEMY_HITBOX_WIDTH, 
+            ENEMY_HITBOX_HEIGHT
+        );
+    }
+
+    // Override collision detection to use custom hitbox
     @Override
     public boolean collidesWith(Sprite other) {
         if (other == null || !this.isVisible() || !other.isVisible()) {
             return false;
         }
         
-        // Use fixed dimensions for consistent collision detection during animation
-        int enemyWidth = 32; // Fixed width for all enemy sprites
-        int enemyHeight = 32; // Fixed height for all enemy sprites
-        int hitBoxPadding = 5; // Additional padding for easier hits
+        Rectangle thisBounds = this.getBounds();
         
-        // Enemy boundaries (centered and consistent)
-        int enemyLeft = this.getCenterX() - (enemyWidth / 2) - hitBoxPadding;
-        int enemyRight = this.getCenterX() + (enemyWidth / 2) + hitBoxPadding;
-        int enemyTop = this.getCenterY() - (enemyHeight / 2) - hitBoxPadding;
-        int enemyBottom = this.getCenterY() + (enemyHeight / 2) + hitBoxPadding;
+        // Check if other sprite has getBounds method (like Player or Enemy)
+        Rectangle otherBounds;
+        if (other instanceof Player) {
+            otherBounds = ((Player) other).getBounds();
+        } else if (other instanceof Enemy) {
+            otherBounds = ((Enemy) other).getBounds();
+        } else {
+            // For other sprites, use image dimensions
+            int otherWidth = (other.getImage() != null) ? other.getImage().getWidth(null) : 16;
+            int otherHeight = (other.getImage() != null) ? other.getImage().getHeight(null) : 16;
+            otherWidth = Math.max(otherWidth, 16);
+            otherHeight = Math.max(otherHeight, 16);
+            otherBounds = new Rectangle(other.getX(), other.getY(), otherWidth, otherHeight);
+        }
         
-        // Other sprite boundaries
-        int otherLeft = other.getX();
-        int otherRight = other.getX() + (other.getImage() != null ? other.getImage().getWidth(null) : 0);
-        int otherTop = other.getY();
-        int otherBottom = other.getY() + (other.getImage() != null ? other.getImage().getHeight(null) : 0);
-        
-        return enemyLeft < otherRight && enemyRight > otherLeft
-                && enemyTop < otherBottom && enemyBottom > otherTop;
+        return thisBounds.intersects(otherBounds);
     }
 
     // Default implementation returns null, can be overridden by subclasses

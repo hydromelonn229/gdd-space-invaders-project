@@ -31,10 +31,6 @@ public class TitleScene extends JPanel {
         // initTitle();
     }
 
-    private void initBoard() {
-
-    }
-
     public void start() {
         addKeyListener(new TAdapter());
         setFocusable(true);
