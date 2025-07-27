@@ -2,6 +2,15 @@
 
 A modern implementation of the classic Space Invaders arcade game built with Java Swing, featuring enhanced graphics, multiple scenes, boss battles, and dynamic gameplay mechanics.
 
+## 👥 Development Team
+
+**Team Name**: [NPCs]
+
+### Team Members
+- **Khant Min Lwin** - Student ID: [6530203] 
+- **Zwe La Pyae** - Student ID: [6530207] 
+- **Thet Myat Noe Thwin** - Student ID: [6530213] 
+
 ## 🎮 Game Overview
 
 This Space Invaders game features two challenging scenes with time-based progression, a scoring system, power-ups, and an epic boss battle. Players must survive increasingly difficult waves of alien enemies while collecting power-ups to enhance their ship's capabilities.
@@ -49,7 +58,6 @@ This Space Invaders game features two challenging scenes with time-based progres
 - **Left Arrow**: Move player ship left
 - **Right Arrow**: Move player ship right
 - **Spacebar**: Fire laser shots
-- **ESC**: Return to main menu (when available)
 
 ## 🏗️ Technical Implementation
 
@@ -103,7 +111,6 @@ src/
 - Background music for different scenes
 - Laser firing sound effects
 - Explosion sound effects
-- Menu interaction sounds
 
 ### Visual Assets
 - Player ship sprites (3-frame animation)
@@ -112,94 +119,15 @@ src/
 - Projectile and explosion sprites
 - Power-up icons
 
-## 🚀 How to Run
-
-### Prerequisites
-- Java Development Kit (JDK) 8 or higher
-- Java Runtime Environment (JRE)
-
-### Compilation and Execution
-```bash
-# Navigate to the project directory
-cd gdd-space-invaders-project
-
-# Compile the project
-javac -d bin src/gdd/*.java src/gdd/scene/*.java src/gdd/sprite/*.java src/gdd/powerup/*.java
-
-# Run the game
-java -cp bin gdd.Main
-```
-
-### Alternative (IDE)
-1. Import the project into your preferred Java IDE
-2. Ensure the src folder is marked as source root
-3. Run the `Main.java` file
-
-## 🎮 Gameplay Tips
-
-- **Prioritize Survival**: Focus on avoiding enemy projectiles over aggressive shooting
-- **Collect Power-Ups**: Speed and multi-shot upgrades significantly improve survivability
-- **Target Alien2**: Kamikaze enemies (20 points) are worth double but more dangerous
-- **Boss Strategy**: The boss has a large hitbox - aim for center mass and maintain distance
-- **Pattern Recognition**: Learn enemy spawn patterns to anticipate attacks
-
 ## 🏆 Scoring System
 
 - **Alien1 (Shooter)**: 10 points per kill
 - **Alien2 (Kamikaze)**: 20 points per kill
 - **Boss Defeat**: Victory condition (game completion)
-- **Survival Bonus**: Complete each scene for progression
-
-## 🔧 Configuration
-
-Game settings can be modified in `Global.java`:
-- Screen dimensions
-- Spawn rates and intervals
-- Player and enemy speeds
-- Health values
-- Scoring multipliers
-
-## 👥 Development Team
-
-**Team Name**: [Your Team Name Here]
-
-### Team Members
-- **[Member 1 Name]** - Student ID: [ID Number] - Role: [e.g., Lead Developer, Game Designer]
-- **[Member 2 Name]** - Student ID: [ID Number] - Role: [e.g., Graphics Designer, Audio Engineer]
-- **[Member 3 Name]** - Student ID: [ID Number] - Role: [e.g., Gameplay Programmer, Tester]
-- **[Member 4 Name]** - Student ID: [ID Number] - Role: [e.g., UI Designer, Documentation]
-
-### Institution
-**Assumption University**  
-Game Design and Development Course  
-Project 1 - Space Invaders Implementation
-
-## 📝 Version History
-
-### Version 1.0.0 (Current)
-- Complete two-scene campaign
-- Boss battle implementation
-- Power-up system
-- Enhanced collision detection
-- Audio and visual effects
-- Time-based progression system
-
-## 🎯 Future Enhancements
-
-- Additional enemy types
-- More power-up varieties
-- Multiple difficulty levels
-- High score persistence
-- Multiplayer support
-- Enhanced visual effects
 
 ## 📄 References
 
 This project is based on and enhanced from the original [Space Invaders](https://github.com/janbodnar/Java-Space-Invaders) repository by Jan Bodnar, with significant modifications and improvements for educational purposes.
-
-## 📄 License
-
-This project is developed as part of the Game Design and Development course at Assumption University. All rights reserved to the development team and educational institution.
 
 ---
 
